@@ -1,0 +1,36 @@
+<!-- Customize this layout based on your requirements -->
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    android:elevation="4dp"
+    android:radius="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Customize the content based on your chat item requirements -->
+        <TextView
+            android:id="@+id/textViewGroupName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Group Chat Name"
+            android:textSize="18sp"
+            android:textColor="@android:color/black"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/textViewLastMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Last message"
+            android:textSize="14sp"
+            android:background="@color/my_dark_gray" />
+
+        <!-- Add any additional elements as needed -->
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

@@ -1,5 +1,6 @@
 package com.example.chatapp
 
+import com.example.chatapp.helpers.Utils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.BufferedReader
@@ -7,60 +8,43 @@ import java.io.BufferedWriter
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.net.Socket
-import java.security.MessageDigest
-import java.security.SecureRandom
 
 class SocketConnection constructor() {
+  companion object SocketSingleton {
+    private const val SERVER_ADDRESS = "10.0.2.2"
+    private const val PORT = 8081
 
-    val socket: Socket by lazy {
-        Socket(SERVER_ADDRESS, PORT)
+    @Volatile private var instance: SocketConnection? = null
+
+    fun getInstance(): SocketConnection {
+      return instance
+        ?: synchronized(this) { instance ?: SocketConnection().also { instance = it } }
     }
+  }
 
-    val writer: BufferedWriter by lazy {
-        BufferedWriter(OutputStreamWriter(socket.getOutputStream()))
-    }
+  suspend fun connectToServer(message: String): String =
+    withContext(Dispatchers.IO) {
+      try {
+        Socket(SERVER_ADDRESS, PORT).use { socket ->
+          BufferedWriter(OutputStreamWriter(socket.getOutputStream())).use { writer ->
+            BufferedReader(InputStreamReader(socket.getInputStream())).use { reader ->
+              Utils.logger.info("Sending data: $message")
 
-    val reader: BufferedReader by lazy {
-        BufferedReader(InputStreamReader(socket.getInputStream()))
-    }
+              // Use the instance to send the message
+              writer.write(message)
+              writer.newLine()
+              writer.flush()
 
-    companion object SocketSingleton {
-        private const val SERVER_ADDRESS = "10.0.2.2"
-        private const val PORT = 8081
+              val serverResponse = reader.readLine()
+              println("Received from server: $serverResponse")
 
-        @Volatile
-        private var instance: SocketConnection? = null
-
-        fun getInstance(): SocketConnection {
-            return instance ?: synchronized(this) {
-                instance ?: SocketConnection().also { instance = it }
+              serverResponse
             }
+          }
         }
+      } catch (e: Exception) {
+        e.printStackTrace()
+        "Connection failed"
+      }
     }
-
-    suspend fun connectToServer(message: String): String =
-        withContext(Dispatchers.IO) {
-
-            try {
-                // Retrieve the instance
-                val connectionInstance = getInstance()
-
-                // Use the instance to send the message
-                connectionInstance.writer.write(message)
-                connectionInstance.writer.newLine()
-                connectionInstance.writer.flush()
-
-                val serverResponse = connectionInstance.reader.readLine()
-                println("Received from server: $serverResponse")
-
-                connectionInstance.writer.close()
-                connectionInstance.reader.close()
-                connectionInstance.socket.close()
-
-                serverResponse
-            } catch (e: Exception) {
-                e.printStackTrace()
-                "Connection failed"
-            }
-        }
 }
