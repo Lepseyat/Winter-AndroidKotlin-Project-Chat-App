@@ -65,6 +65,7 @@ class Chat : AppCompatActivity() {
     btnFriends = findViewById(R.id.btnFriends)
     btnFriends.setOnClickListener {
       val intent = Intent(this, FriendsActivity::class.java)
+      intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
       startActivity(intent)
     }
 
@@ -72,6 +73,7 @@ class Chat : AppCompatActivity() {
     btnProfile.setOnClickListener {
       val intent = Intent(this, ProfileActivity::class.java)
       intent.putExtra(LOGGED_IN_USER_KEY, loggedInUserJson)
+      intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
       startActivity(intent)
     }
 
@@ -91,7 +93,7 @@ class Chat : AppCompatActivity() {
 
             withContext(Dispatchers.Main) {
               if (groupChats.isEmpty()) {
-                // Handle case when there are no group chats
+                // Show pic empty chats or text
               } else {
                 println("GroupChats size: ${groupChats.size}")
                 updateUIWithGroupChats(groupChats)
@@ -129,9 +131,7 @@ class Chat : AppCompatActivity() {
           filterChatList(charSequence.toString())
         }
 
-        override fun afterTextChanged(editable: Editable?) {
-          // Not used in this example
-        }
+        override fun afterTextChanged(editable: Editable?) {}
       }
     )
   }
@@ -173,6 +173,7 @@ class Chat : AppCompatActivity() {
         val intent = Intent(this@Chat, GroupChatActivity::class.java)
         intent.putExtra(GROUP_CHAT_ID, groupChatId)
         startActivity(intent)
+        onPause()
       }
     }
   }

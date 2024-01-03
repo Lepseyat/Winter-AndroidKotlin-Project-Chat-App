@@ -2,6 +2,7 @@ package com.example.chatapp.helpers
 
 import android.content.Context
 import android.util.Patterns
+import android.widget.Toast
 import com.example.chatapp.dataclass.JsonResponse
 import com.google.gson.Gson
 import org.apache.logging.log4j.LogManager
@@ -24,20 +25,19 @@ class Utils {
 
   // Replace showToast with Log4j logging
   fun showToast(context: Context, message: CharSequence) {
-    logger.info("Showing toast: $message")
+    val tag = "Utils"
+    val logMessage = "Showing toast: $message"
+
+    // Log the message with context information
+    logger.info("$tag - $logMessage")
+
     // Original Toast implementation
-    // Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
   }
 
   companion object {
 
     val logger = LogManager.getLogger(Utils::class.java)
-
-    fun showToast(context: Context, message: CharSequence) {
-      logger.info("Showing toast: $message")
-      // Original Toast implementation
-      // Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-    }
 
     fun isValidEmail(email: String): Boolean {
       val isValid = !Patterns.EMAIL_ADDRESS.matcher(email).matches()
