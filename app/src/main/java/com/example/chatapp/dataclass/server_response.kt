@@ -35,7 +35,7 @@ data class ResponseContent(
   val message: String,
   val user: User? = null,
   val groupchats: List<GroupChatDataClass>? = null,
-  //  val messages: List<MessageDataClass>? = null,
+  // val messages: List<MessageDataClass>? = null,
   val friendrequests: List<FriendRequestDataClass>? = null
 )
 

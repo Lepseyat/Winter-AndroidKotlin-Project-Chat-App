@@ -21,14 +21,20 @@ class FriendsActivity : AppCompatActivity() {
 
     btnAddFriend.setOnClickListener {
       val intent = Intent(this, FriendRequestActivity::class.java)
+      intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
       startActivity(Intent(intent))
     }
 
     btnProfile.setOnClickListener {
       val intent = Intent(this, ProfileActivity::class.java)
+      intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
       startActivity(Intent(intent))
     }
 
-    btnChat.setOnClickListener { finish() }
+    btnChat.setOnClickListener {
+      val intent = Intent(this, Chat::class.java)
+      intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+      startActivity(intent)
+    }
   }
 }

@@ -69,9 +69,8 @@ class LoginActivity : AppCompatActivity() {
             println("Status for login: $status")
 
             if (status == "Success") {
-
+              utils.showToast(this@LoginActivity, "You have logged in")
               try {
-
                 val jsonElement = JsonParser.parseString(receivedMessageFromServer)
                 val jsonObject =
                   jsonElement.asJsonObject.getAsJsonObject("response").getAsJsonObject("user")
@@ -90,20 +89,16 @@ class LoginActivity : AppCompatActivity() {
                     putExtra(LOGGED_IN_USER_KEY, json)
                   }
                 startActivity(intentChat)
-                finish()
               } catch (e: Exception) {
-
-                println("Error: ${e.message}")
+                println("Error in LoginActivity: ${e.message}")
               }
-              utils.showToast(this@LoginActivity, "You have Logged in")
             } else {
               utils.showToast(this@LoginActivity, "Incorrect email or password")
             }
           }
         } else {
-          utils.showToast(this, "Incorrect email")
+          utils.showToast(this, "Incorrect email or password")
         }
-        finish()
       }
     }
   }

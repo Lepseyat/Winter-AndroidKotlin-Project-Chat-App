@@ -1,9 +1,7 @@
 package com.example.chatapp
 
-import android.graphics.Rect
 import android.os.Bundle
 import android.util.Log
-import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -11,6 +9,7 @@ import com.example.chatapp.Adapters.MessageAdapter
 import com.example.chatapp.dataclass.GetGroupChatsData
 import com.example.chatapp.dataclass.GroupChatId
 import com.example.chatapp.helpers.Utils
+import com.example.chatapp.items.MessageItemDecoration
 import com.example.chatapp.model.GroupChat.Companion.GROUP_CHAT_ID
 import com.example.chatapp.model.Message
 import com.google.gson.Gson
@@ -122,20 +121,5 @@ class GroupChatActivity : AppCompatActivity() {
 
     // Scroll to the bottom
     recyclerView.scrollToPosition(adapter.itemCount - 1)
-  }
-}
-
-class MessageItemDecoration(private val spaceHeight: Int) : RecyclerView.ItemDecoration() {
-
-  override fun getItemOffsets(
-    outRect: Rect,
-    view: View,
-    parent: RecyclerView,
-    state: RecyclerView.State
-  ) {
-    // Apply spacing to all items except the last one
-    if (parent.getChildAdapterPosition(view) != parent.adapter?.itemCount?.minus(1)) {
-      outRect.bottom = spaceHeight
-    }
   }
 }
