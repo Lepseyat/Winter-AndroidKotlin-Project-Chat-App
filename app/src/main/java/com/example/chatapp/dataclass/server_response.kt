@@ -10,19 +10,21 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class UserDataResponse(val username: String, val email: String, val password: String)
 
-@Serializable data class GroupChatResponse(@SerialName("response") val response: Response)
+// @Serializable data class GroupChatResponse(@SerialName("response") val response: Response)
+
+@Serializable data class ResponseWrapper(@SerialName("response") val response: Response)
 
 @Serializable
 data class Response(
   @SerialName("status") val status: String,
   @SerialName("message") val message: String,
-  @SerialName("groupchats") val groupchats: List<GroupChatItem>
+  @SerialName("groupchats") val groupchats: List<GroupChatResponse>
 )
 
-@Serializable data class GroupChatItem(@SerialName("groupchat") val groupchat: GroupChat)
+// @Serializable data class GroupChatItem(@SerialName("groupchat") val groupchat: GroupChat)
 
 @Serializable
-data class GroupChat(
+data class GroupChatResponse(
   @SerialName("id") val id: Int,
   @SerialName("name") val name: String,
   @SerialName("users") val users: List<User>,
