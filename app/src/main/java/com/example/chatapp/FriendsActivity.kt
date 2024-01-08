@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
+import com.example.chatapp.model.User.Companion.LOGGED_IN_USER_KEY
 
 class FriendsActivity : AppCompatActivity() {
 
@@ -19,8 +20,12 @@ class FriendsActivity : AppCompatActivity() {
     btnChat = findViewById(R.id.btnChat)
     btnProfile = findViewById(R.id.btnProfile)
 
+    val loggedInUserJson = intent?.getSerializableExtra(LOGGED_IN_USER_KEY) as? String ?: ""
+    println("loggedInUserJson in FriendsActivity - $loggedInUserJson")
+
     btnAddFriend.setOnClickListener {
       val intent = Intent(this, FriendRequestActivity::class.java)
+      intent.putExtra(LOGGED_IN_USER_KEY, loggedInUserJson)
       intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
       startActivity(Intent(intent))
     }

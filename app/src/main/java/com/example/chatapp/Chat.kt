@@ -7,14 +7,14 @@ import android.text.TextWatcher
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.RelativeLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.chatapp.Adapters.GroupChatAdapter
 import com.example.chatapp.dataclass.GetGroupChats
-import com.example.chatapp.dataclass.GroupChatItem
-import com.example.chatapp.dataclass.GroupChatResponse
+import com.example.chatapp.dataclass.ResponseWrapper
 import com.example.chatapp.dataclass.UserChats
 import com.example.chatapp.helpers.Utils
 import com.example.chatapp.model.GroupChat
@@ -36,6 +36,7 @@ class Chat : AppCompatActivity() {
   private lateinit var recyclerView: RecyclerView
   private lateinit var editTextSearch: EditText
   private lateinit var groupChatAdapter: GroupChatAdapter
+  private lateinit var overlayLayout: RelativeLayout
 
   private var userEmail = ""
   private var groupChatList = mutableListOf<GroupChat>()
@@ -43,6 +44,7 @@ class Chat : AppCompatActivity() {
   private val utils = Utils
   private var groupChatsAuthUser = ""
   private var filteredGroupChats = mutableListOf<GroupChat>()
+  private var loggedInUserJson = ""
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -50,11 +52,12 @@ class Chat : AppCompatActivity() {
 
     recyclerView = findViewById(R.id.recyclerViewChats)
     editTextSearch = findViewById(R.id.editTextSearch)
+    overlayLayout = findViewById(R.id.overlayLayout)
     recyclerView.layoutManager = LinearLayoutManager(this)
     groupChatAdapter = GroupChatAdapter(this, groupChatList)
     recyclerView.adapter = groupChatAdapter
 
-    val loggedInUserJson = intent?.getSerializableExtra(LOGGED_IN_USER_KEY) as? String ?: ""
+    loggedInUserJson = intent?.getSerializableExtra(LOGGED_IN_USER_KEY) as? String ?: ""
 
     val fabCreateChat: FloatingActionButton = findViewById(R.id.fabCreateChat)
     fabCreateChat.setOnClickListener {
@@ -65,6 +68,7 @@ class Chat : AppCompatActivity() {
     btnFriends = findViewById(R.id.btnFriends)
     btnFriends.setOnClickListener {
       val intent = Intent(this, FriendsActivity::class.java)
+      intent.putExtra(LOGGED_IN_USER_KEY, loggedInUserJson)
       intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
       startActivity(intent)
     }
@@ -83,25 +87,38 @@ class Chat : AppCompatActivity() {
           val user: User = Json.decodeFromString(User.serializer(), loggedInUserJson)
           userEmail = user.email
           val base64Email = utils.base64(userEmail)
-          try {
-            groupChatsAuthUser = getGroupChatsAuthUser(base64Email)
-            val groupChatResponse =
-              Json { ignoreUnknownKeys = true }
-                .decodeFromString<GroupChatResponse>(groupChatsAuthUser)
+          groupChatsAuthUser = getGroupChatsAuthUser(base64Email)
+          val responseWrapper =
+            Json { ignoreUnknownKeys = true }.decodeFromString<ResponseWrapper>(groupChatsAuthUser)
 
-            val groupChats = groupChatResponse.response.groupchats
+          val response = responseWrapper.response
 
-            withContext(Dispatchers.Main) {
+          withContext(Dispatchers.Main) {
+            if (response.status == "Success") {
+              val groupChats: List<GroupChat> =
+                response.groupchats.map { groupChatResponse ->
+                  GroupChat(
+                    id = groupChatResponse.id,
+                    name = groupChatResponse.name,
+                    users = groupChatResponse.users,
+                    messages = groupChatResponse.message
+                  )
+                }
+
               if (groupChats.isEmpty()) {
-                // Show pic empty chats or text
+                recyclerView.visibility = View.GONE
+                overlayLayout.visibility = View.VISIBLE
               } else {
+                recyclerView.visibility = View.VISIBLE
+                overlayLayout.visibility = View.GONE
+
                 println("GroupChats size: ${groupChats.size}")
                 updateUIWithGroupChats(groupChats)
                 setItemClickListeners(groupChats)
               }
+            } else {
+              // Handle other status values
             }
-          } catch (e: Exception) {
-            e.printStackTrace()
           }
         } catch (e: Exception) {
           e.printStackTrace()
@@ -136,23 +153,10 @@ class Chat : AppCompatActivity() {
     )
   }
 
-  private fun convertGroupChatItemToGroupChat(groupChatItem: GroupChatItem): GroupChat {
-    return GroupChat(
-      id = groupChatItem.groupchat.id,
-      name = groupChatItem.groupchat.name,
-      users = groupChatItem.groupchat.users,
-      messages = groupChatItem.groupchat.message
-    )
-  }
-
-  private suspend fun updateUIWithGroupChats(groupChats: List<GroupChatItem>) {
+  private suspend fun updateUIWithGroupChats(groupChats: List<GroupChat>) {
     withContext(Dispatchers.Main) {
       groupChatList.clear()
-
-      for (groupChatItem in groupChats) {
-        val groupChat = convertGroupChatItemToGroupChat(groupChatItem)
-        groupChatList.add(groupChat)
-      }
+      groupChatList.addAll(groupChats)
 
       filteredGroupChats =
         groupChatList
@@ -163,7 +167,7 @@ class Chat : AppCompatActivity() {
     }
   }
 
-  private fun setItemClickListeners(groupChats: List<GroupChatItem>) {
+  private fun setItemClickListeners(groupChats: List<GroupChat>) {
     recyclerView.addOnItemClickListener { position, _ ->
       val selectedGroupChat = filteredGroupChats.getOrNull(position)
 
@@ -172,6 +176,7 @@ class Chat : AppCompatActivity() {
 
         val intent = Intent(this@Chat, GroupChatActivity::class.java)
         intent.putExtra(GROUP_CHAT_ID, groupChatId)
+        intent.putExtra(LOGGED_IN_USER_KEY, loggedInUserJson)
         startActivity(intent)
         onPause()
       }

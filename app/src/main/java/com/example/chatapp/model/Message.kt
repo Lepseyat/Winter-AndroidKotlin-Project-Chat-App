@@ -9,10 +9,10 @@ data class Message(
   var content: String,
   var attachmentURL: String,
   var timestamp: String,
-  var sender: YourSenderClass
+  var sender: SenderClass
 ) {
   @Serializable
-  data class YourSenderClass(
+  data class SenderClass(
     val id: String,
     val email: String,
     val password: String,

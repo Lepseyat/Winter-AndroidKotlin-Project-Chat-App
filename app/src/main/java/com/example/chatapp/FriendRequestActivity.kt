@@ -22,8 +22,6 @@ class FriendRequestActivity : AppCompatActivity() {
   private lateinit var btnAddFriend: Button
   private val gson = Gson()
 
-  private var userEmail = ""
-
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     setContentView(R.layout.activity_friend_request)
@@ -31,23 +29,8 @@ class FriendRequestActivity : AppCompatActivity() {
     edtEmail = findViewById(R.id.edt_email)
     btnAddFriend = findViewById(R.id.btnAddFriend)
 
-    val intent = intent
-    val loggedInUserJson = intent?.getStringExtra(LOGGED_IN_USER_KEY) ?: ""
-    println(" $loggedInUserJson")
-
-    if (loggedInUserJson.isNotEmpty()) {
-      try {
-        val user: User = Json.decodeFromString(User.serializer(), loggedInUserJson)
-        userEmail = user.email
-        println("userEmail received to friendRequestActivity - ${user.email}")
-      } catch (e: SerializationException) {
-        println("Error decoding JSON: ${e.message}")
-      }
-    } else {
-      println("Empty JSON string received.")
-    }
-
-    println("userEmail - $userEmail")
+    val loggedInUserJson = intent?.getSerializableExtra(LOGGED_IN_USER_KEY) as? String ?: ""
+    println("loggedInUserJson in ProfileActivity - $loggedInUserJson")
 
     btnAddFriend.setOnClickListener {
       val email = edtEmail.text.toString()
@@ -55,40 +38,52 @@ class FriendRequestActivity : AppCompatActivity() {
       val utils = Utils()
       val base64EmailReceiver = utils.base64(email)
 
-      if (email.isBlank()) {
-        utils.showToast(this, "Fill the empty field")
-      } else {
-        if (utils.isValidEmail(email)) {
-          GlobalScope.launch(
-            Dispatchers.Main
-          ) { // work with database - reading/writing to files / network calls
-            //   var userEmail: String = processLoggedInUser(loggedInUser = null)
+      if (loggedInUserJson.isNotEmpty()) {
+        try {
+          val user: User = Json.decodeFromString(User.serializer(), loggedInUserJson)
+          val userEmail = user.email
+          println("userEmail received to friendRequestActivity - ${user.email}")
 
-            println("UserEmail in button - $userEmail")
+          if (email.isBlank()) {
+            utils.showToast(this, "Fill the empty field")
+          } else {
+            if (utils.isValidEmail(email)) {
+              GlobalScope.launch(
+                Dispatchers.Main
+              ) { // work with database - reading/writing to files / network calls
+                //   var userEmail: String = processLoggedInUser(loggedInUser = null)
 
-            val base64EmailSender = utils.base64(userEmail)
+                println("UserEmail in button - $userEmail")
 
-            val receivedMessageFromServer =
-              performFriendRequest(base64EmailSender, base64EmailReceiver)
+                val base64EmailSender = utils.base64(userEmail)
 
-            val status = utils.gsonResponse(receivedMessageFromServer)
-            println("Status for friend request: $status")
+                val receivedMessageFromServer =
+                  performFriendRequest(base64EmailSender, base64EmailReceiver)
 
-            if (status == "Success") {
+                val status = utils.gsonResponse(receivedMessageFromServer)
+                println("Status for friend request: $status")
 
-              utils.showToast(this@FriendRequestActivity, "Friend request sent")
+                if (status == "Success") {
+
+                  utils.showToast(this@FriendRequestActivity, "Friend request sent")
+                } else {
+                  utils.showToast(this@FriendRequestActivity, "Email doesn't exist")
+                }
+              }
             } else {
-              utils.showToast(this@FriendRequestActivity, "Email doesn't exist")
+              utils.showToast(this, "Incorrect email")
             }
           }
-        } else {
-          utils.showToast(this, "Incorrect email")
+        } catch (e: SerializationException) {
+          println("Error decoding JSON: ${e.message}")
         }
+      } else {
+        println("Empty JSON string received.")
       }
     }
   }
 
-  private suspend fun performFriendRequest(senderEmail: String, receiverEmail: String): String {
+  private suspend fun performFriendRequest(senderEmail: String, emailRecipient: String): String {
     try {
       val utils = Utils()
       val eventType: String = "SendFriendRequest"
@@ -99,7 +94,7 @@ class FriendRequestActivity : AppCompatActivity() {
       val friendRequestActivity =
         UserFriendRequestActivity(
           eventType = encodedEventType,
-          data = UserFriendRequest(emailSender = senderEmail, emailReceiver = receiverEmail)
+          data = UserFriendRequest(emailSender = senderEmail, emailRecipient = emailRecipient)
         )
 
       val json = gson.toJson(friendRequestActivity)

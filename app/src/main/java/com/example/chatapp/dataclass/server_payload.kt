@@ -15,7 +15,7 @@ data class UserDataPayload(val username: String, val email: String, val password
 @Serializable
 data class UserFriendRequestActivity(val eventType: String, val data: UserFriendRequest)
 
-@Serializable data class UserFriendRequest(val emailSender: String?, val emailReceiver: String)
+@Serializable data class UserFriendRequest(val emailSender: String?, val emailRecipient: String)
 
 @Serializable data class GetGroupChats(val eventType: String, val data: UserChats)
 
@@ -29,14 +29,15 @@ data class UserFriendRequestActivity(val eventType: String, val data: UserFriend
 
 @Serializable
 data class Userdata(
-  val id: String,
+  val id: String?,
   val content: String,
-  val attachmentURL: String,
   val timestamp: String,
-  val user: User
+  val attachmentURL: String,
+  val groupchatid: String,
+  val sender: User
 )
 
-@Serializable data class User(val username: String, val email: String)
+@Serializable data class User(val username: String, val email: String, val password: String)
 
 // @Serializable data class GroupChatDataClass(val groupchat: GroupChatData)
 
