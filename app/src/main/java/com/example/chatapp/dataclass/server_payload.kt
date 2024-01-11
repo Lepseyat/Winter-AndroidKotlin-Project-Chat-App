@@ -39,6 +39,20 @@ data class Userdata(
 
 @Serializable data class User(val username: String, val email: String, val password: String)
 
+@Serializable
+data class GetFriendRequestsAuthUser(val eventType: String, val data: PendingFriendRequests)
+
+@Serializable data class PendingFriendRequests(val email: String)
+
+@Serializable
+data class GetIncomingFriendRequests(val eventType: String, val data: IncomingFriendRequests)
+
+@Serializable data class IncomingFriendRequests(val email: String)
+
+@Serializable data class GetFriendsAuthUser(val eventType: String, val data: FriendsAuthUser)
+
+@Serializable data class FriendsAuthUser(val email: String)
+
 // @Serializable data class GroupChatDataClass(val groupchat: GroupChatData)
 
 // @Serializable data class GroupChatData(val id: Int, val name: String, val users: List<UserData>)

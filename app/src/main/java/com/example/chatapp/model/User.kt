@@ -9,7 +9,6 @@ data class User(
   @SerialName("email") val email: String,
   @SerialName("password") val password: String
 ) {
-
   companion object {
     const val LOGGED_IN_USER_KEY = "loggedInUser"
   }
