@@ -9,6 +9,8 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.chatapp.R
 import com.example.chatapp.model.Message
+import java.text.SimpleDateFormat
+import java.util.Date
 
 class MessageAdapter(private val context: Context, private val messages: List<Message>) :
   RecyclerView.Adapter<MessageAdapter.MessageViewHolder>() {
@@ -31,10 +33,18 @@ class MessageAdapter(private val context: Context, private val messages: List<Me
     Log.d("MessageAdapter", "Binding message: $message")
     holder.textViewUsername.text = message.sender.username
     holder.textViewContent.text = message.content
-    holder.textViewTimestamp.text = message.timestamp
+
+    val formattedTimestamp = convertUnixTimestampToString(message.timestamp.toLong())
+    holder.textViewTimestamp.text = formattedTimestamp
   }
 
   override fun getItemCount(): Int {
     return messages.size
+  }
+
+  private fun convertUnixTimestampToString(unixTimestamp: Long): String {
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm")
+    val date = Date(unixTimestamp)
+    return dateFormat.format(date)
   }
 }

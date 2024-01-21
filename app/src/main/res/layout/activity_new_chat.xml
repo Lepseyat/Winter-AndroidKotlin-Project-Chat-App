@@ -3,4 +3,27 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- EditText for entering the group chat name -->
+        <EditText
+            android:id="@+id/edtGroupName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter group chat name"
+            android:padding="16dp" />
+
+        <!-- Button to create the new group chat -->
+        <Button
+            android:id="@+id/btnCreateGroupChat"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/edtGroupName"
+            android:layout_marginTop="16dp"
+            android:text="Create new group chat"
+            android:onClick="onCreateGroupChatClick" />
+    </RelativeLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

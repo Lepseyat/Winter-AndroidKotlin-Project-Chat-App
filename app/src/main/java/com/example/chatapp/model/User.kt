@@ -5,10 +5,16 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class User(
-  @SerialName("username") val username: String,
-  @SerialName("email") val email: String,
-  @SerialName("password") val password: String
+  @SerialName("username") var username: String,
+  @SerialName("email") var email: String,
+  @SerialName("password") var password: String
 ) {
+
+  fun clearSensitiveInformation() {
+    username = ""
+    email = ""
+    password = ""
+  }
 
   companion object {
     const val LOGGED_IN_USER_KEY = "loggedInUser"

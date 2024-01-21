@@ -31,7 +31,6 @@ class GroupChatAdapter(private val context: Context, private var groupChats: Lis
 
   inner class GroupChatViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
     var groupChatName: TextView = itemView.findViewById(R.id.textViewGroupName)
-    // Add other views if necessary
   }
 
   fun updateData(newData: List<GroupChat>) {

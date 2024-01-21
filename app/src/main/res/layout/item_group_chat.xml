@@ -22,15 +22,13 @@
             android:textColor="@android:color/black"
             android:textStyle="bold" />
 
-        <TextView
+        <!--<TextView
             android:id="@+id/textViewLastMessage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Last message"
             android:textSize="14sp"
-            android:background="@color/my_dark_gray" />
-
-        <!-- Add any additional elements as needed -->
+            android:background="@color/my_dark_gray" />-->
 
     </LinearLayout>
 </androidx.cardview.widget.CardView>

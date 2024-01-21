@@ -3,7 +3,7 @@ package com.example.chatapp.helpers
 import android.content.Context
 import android.util.Patterns
 import android.widget.Toast
-import com.example.chatapp.dataclass.JsonResponse
+import com.example.chatapp.dataclass.ServerResponse
 import com.google.gson.Gson
 import org.apache.logging.log4j.LogManager
 
@@ -11,11 +11,6 @@ class Utils {
 
   // Logger instance
   private val logger = LogManager.getLogger(Utils::class.java)
-
-  fun base64(value: String): String {
-    logger.debug("Converting to base64: $value")
-    return java.util.Base64.getEncoder().encodeToString(value.toByteArray())
-  }
 
   fun isValidEmail(email: String): Boolean {
     val isValid = Patterns.EMAIL_ADDRESS.matcher(email).matches()
@@ -51,17 +46,12 @@ class Utils {
       logger.debug("Password validation for $password: $isValid")
       return isValid
     }
-
-    fun base64(value: String): String {
-      logger.debug("Converting to base64: $value")
-      return java.util.Base64.getEncoder().encodeToString(value.toByteArray())
-    }
   }
 
   fun gsonResponse(response: String): String {
     val gson = Gson()
-    val jsonResponse = gson.fromJson(response, JsonResponse::class.java)
-    val status = jsonResponse.response.status
+    val jsonResponse = gson.fromJson(response, ServerResponse::class.java)
+    val status = jsonResponse.status
 
     logger.debug("Parsing JSON response: $response, Status: $status")
 

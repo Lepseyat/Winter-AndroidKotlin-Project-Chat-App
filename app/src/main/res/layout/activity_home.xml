@@ -5,7 +5,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@android:color/background_light">
 
-    <!-- Chat List -->
+
     <LinearLayout
         android:id="@+id/chatListLayout"
         android:layout_width="0dp"
@@ -81,21 +81,20 @@
 
     </LinearLayout>
 
-    <!-- Floating Action Button -->
+
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabCreateChat"
+        android:id="@+id/btnCreateChat"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="70dp"
-        android:layout_marginStart="20dp"
-        android:layout_marginEnd="20dp"
+        android:layout_marginEnd="28dp"
         app:srcCompat="@drawable/ic_plus"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/bottomButtonsLayout"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:contentDescription="TODO" />
+        android:contentDescription="TODO"
+        app:layout_constraintVertical_bias="0.974" />
 
-    <!-- Bottom Buttons -->
+
     <LinearLayout
         android:id="@+id/bottomButtonsLayout"
         android:layout_width="0dp"

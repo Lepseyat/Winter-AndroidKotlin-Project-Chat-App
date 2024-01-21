@@ -12,7 +12,6 @@
         android:padding="16dp"
         tools:ignore="MissingConstraints">
 
-        <!-- Your TextViews go here -->
         <TextView
             android:id="@+id/textViewUsername"
             android:layout_width="wrap_content"

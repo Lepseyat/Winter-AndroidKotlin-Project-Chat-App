@@ -2,6 +2,7 @@ package com.example.chatapp
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
@@ -13,23 +14,26 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.chatapp.Adapters.GroupChatAdapter
-import com.example.chatapp.dataclass.GetGroupChats
-import com.example.chatapp.dataclass.ResponseWrapper
-import com.example.chatapp.dataclass.UserChats
-import com.example.chatapp.helpers.Utils
+import com.example.chatapp.dataclass.DataRequest
+import com.example.chatapp.dataclass.ServerRequest
+import com.example.chatapp.dataclass.ServerResponse
+import com.example.chatapp.dataclass.UserData
 import com.example.chatapp.model.GroupChat
+import com.example.chatapp.model.GroupChat.Companion.GROUP_CHAT_EMAILS
 import com.example.chatapp.model.GroupChat.Companion.GROUP_CHAT_ID
+import com.example.chatapp.model.GroupChat.Companion.GROUP_CHAT_USERNAMES
 import com.example.chatapp.model.User
 import com.example.chatapp.model.User.Companion.LOGGED_IN_USER_KEY
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
-class Chat : AppCompatActivity() {
+class GroupChatsHomeScreenActivity : AppCompatActivity() {
 
   private lateinit var btnFriends: Button
   private lateinit var btnProfile: Button
@@ -38,10 +42,11 @@ class Chat : AppCompatActivity() {
   private lateinit var groupChatAdapter: GroupChatAdapter
   private lateinit var overlayLayout: RelativeLayout
 
+  private val gson = Gson()
+  private val handler = Handler()
+
   private var userEmail = ""
   private var groupChatList = mutableListOf<GroupChat>()
-  private val gson = Gson()
-  private val utils = Utils
   private var groupChatsAuthUser = ""
   private var filteredGroupChats = mutableListOf<GroupChat>()
   private var loggedInUserJson = ""
@@ -59,9 +64,11 @@ class Chat : AppCompatActivity() {
 
     loggedInUserJson = intent?.getSerializableExtra(LOGGED_IN_USER_KEY) as? String ?: ""
 
-    val fabCreateChat: FloatingActionButton = findViewById(R.id.fabCreateChat)
-    fabCreateChat.setOnClickListener {
+    val btnCreateChat: FloatingActionButton = findViewById(R.id.btnCreateChat)
+    btnCreateChat.setOnClickListener {
       val intent = Intent(this, NewChatActivity::class.java)
+      intent.putExtra(LOGGED_IN_USER_KEY, loggedInUserJson)
+      intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
       startActivity(Intent(intent))
     }
 
@@ -86,22 +93,18 @@ class Chat : AppCompatActivity() {
         try {
           val user: User = Json.decodeFromString(User.serializer(), loggedInUserJson)
           userEmail = user.email
-          val base64Email = utils.base64(userEmail)
-          groupChatsAuthUser = getGroupChatsAuthUser(base64Email)
-          val responseWrapper =
-            Json { ignoreUnknownKeys = true }.decodeFromString<ResponseWrapper>(groupChatsAuthUser)
-
-          val response = responseWrapper.response
+          groupChatsAuthUser = getGroupChatsAuthUser(userEmail)
+          val responseContent =
+            Json { ignoreUnknownKeys = true }.decodeFromString<ServerResponse>(groupChatsAuthUser)
 
           withContext(Dispatchers.Main) {
-            if (response.status == "Success") {
+            if (responseContent.status == "Success") {
               val groupChats: List<GroupChat> =
-                response.groupchats.map { groupChatResponse ->
+                responseContent.data.groupchats!!.map { groupChatResponse ->
                   GroupChat(
                     id = groupChatResponse.id,
                     name = groupChatResponse.name,
-                    users = groupChatResponse.users,
-                    messages = groupChatResponse.message
+                    users = groupChatResponse.users
                   )
                 }
 
@@ -120,6 +123,7 @@ class Chat : AppCompatActivity() {
               // Handle other status values
             }
           }
+          handler.postDelayed(updateRunnable, 10000)
         } catch (e: Exception) {
           e.printStackTrace()
         }
@@ -134,9 +138,7 @@ class Chat : AppCompatActivity() {
           start: Int,
           count: Int,
           after: Int
-        ) {
-          // Not used in this example
-        }
+        ) {}
 
         override fun onTextChanged(
           charSequence: CharSequence?,
@@ -167,6 +169,11 @@ class Chat : AppCompatActivity() {
     }
   }
 
+  private fun updateRecyclerView(groupChats: List<GroupChat>) {
+    // Update the RecyclerView adapter with the new group chats
+    groupChatAdapter.updateData(groupChats)
+  }
+
   private fun setItemClickListeners(groupChats: List<GroupChat>) {
     recyclerView.addOnItemClickListener { position, _ ->
       val selectedGroupChat = filteredGroupChats.getOrNull(position)
@@ -174,9 +181,16 @@ class Chat : AppCompatActivity() {
       if (selectedGroupChat != null) {
         val groupChatId = selectedGroupChat.getIdGroupChat()
 
-        val intent = Intent(this@Chat, GroupChatActivity::class.java)
+        val intent = Intent(this@GroupChatsHomeScreenActivity, ChatActivity::class.java)
         intent.putExtra(GROUP_CHAT_ID, groupChatId)
         intent.putExtra(LOGGED_IN_USER_KEY, loggedInUserJson)
+
+        val usernames = selectedGroupChat.users.map { it.username }
+        intent.putStringArrayListExtra(GROUP_CHAT_USERNAMES, ArrayList(usernames))
+
+        val userEmails = selectedGroupChat.users.map { it.email }
+        intent.putStringArrayListExtra(GROUP_CHAT_EMAILS, ArrayList(userEmails))
+
         startActivity(intent)
         onPause()
       }
@@ -185,13 +199,15 @@ class Chat : AppCompatActivity() {
 
   private suspend fun getGroupChatsAuthUser(email: String): String {
     try {
-      val utils = Utils()
-      val eventType: String = "GetGroupChatsAuthUser"
-      val encodedEventType = utils.base64(eventType)
+      val eventType: String = "GetGroupChats"
       val connection = SocketConnection()
       SocketConnection.getInstance()
 
-      val getGroupChats = GetGroupChats(eventType = encodedEventType, UserChats(email = email))
+      val getGroupChats =
+        ServerRequest(
+          eventType = eventType,
+          data = DataRequest(user = UserData(id = 0, username = "", email = email, password = ""))
+        )
 
       val json = gson.toJson(getGroupChats)
 
@@ -224,4 +240,45 @@ class Chat : AppCompatActivity() {
       }
     )
   }
+
+  private fun fetchAndUpdateGroupChats() {
+    GlobalScope.launch(Dispatchers.Main) {
+      try {
+        val responseGroupChatId = getGroupChatsAuthUser(userEmail)
+        println("Received JSON data for group chats: $responseGroupChatId")
+
+        val groupChats =
+          Json { ignoreUnknownKeys = true }
+            .decodeFromString<ServerResponse>(responseGroupChatId)
+            .data
+            .groupchats
+            ?.map { groupChatResponse ->
+              GroupChat(
+                id = groupChatResponse.id,
+                name = groupChatResponse.name,
+                users = groupChatResponse.users
+              )
+            } ?: emptyList()
+
+        updateUIWithGroupChats(groupChats)
+        updateRecyclerView(groupChats)
+      } catch (e: Exception) {
+        e.printStackTrace()
+      }
+    }
+  }
+
+  override fun onDestroy() {
+    handler.removeCallbacks(updateRunnable)
+    super.onDestroy()
+  }
+
+  private val updateRunnable =
+    object : Runnable {
+      override fun run() {
+        fetchAndUpdateGroupChats()
+
+        handler.postDelayed(this, 10000)
+      }
+    }
 }
