@@ -18,7 +18,6 @@ import com.example.chatapp.dataclass.DataRequest
 import com.example.chatapp.dataclass.ServerRequest
 import com.example.chatapp.dataclass.ServerResponse
 import com.example.chatapp.dataclass.UserData
-import com.example.chatapp.helpers.Utils
 import com.example.chatapp.model.GroupChat
 import com.example.chatapp.model.GroupChat.Companion.GROUP_CHAT_EMAILS
 import com.example.chatapp.model.GroupChat.Companion.GROUP_CHAT_ID
@@ -34,7 +33,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
-class Chat : AppCompatActivity() {
+class GroupChatsHomeScreenActivity : AppCompatActivity() {
 
   private lateinit var btnFriends: Button
   private lateinit var btnProfile: Button
@@ -124,7 +123,7 @@ class Chat : AppCompatActivity() {
               // Handle other status values
             }
           }
-          // handler.postDelayed(updateRunnable, 10000)
+          handler.postDelayed(updateRunnable, 10000)
         } catch (e: Exception) {
           e.printStackTrace()
         }
@@ -182,7 +181,7 @@ class Chat : AppCompatActivity() {
       if (selectedGroupChat != null) {
         val groupChatId = selectedGroupChat.getIdGroupChat()
 
-        val intent = Intent(this@Chat, GroupChatActivity::class.java)
+        val intent = Intent(this@GroupChatsHomeScreenActivity, ChatActivity::class.java)
         intent.putExtra(GROUP_CHAT_ID, groupChatId)
         intent.putExtra(LOGGED_IN_USER_KEY, loggedInUserJson)
 
@@ -200,7 +199,6 @@ class Chat : AppCompatActivity() {
 
   private suspend fun getGroupChatsAuthUser(email: String): String {
     try {
-      val utils = Utils()
       val eventType: String = "GetGroupChats"
       val connection = SocketConnection()
       SocketConnection.getInstance()

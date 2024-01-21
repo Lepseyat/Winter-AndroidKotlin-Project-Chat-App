@@ -26,13 +26,10 @@ class LoginActivity : AppCompatActivity() {
   private lateinit var btnSignUp: Button
 
   private val gson = Gson()
-  val userList: MutableList<User> = mutableListOf()
 
   private var usernameUser = ""
   private var emailUser = ""
   private var passwordUser = ""
-
-  private var loggedInUser: User? = null
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -87,7 +84,7 @@ class LoginActivity : AppCompatActivity() {
                     println("Logged in User Json - $json")
 
                     val intentChat =
-                      Intent(this@LoginActivity, Chat::class.java).apply {
+                      Intent(this@LoginActivity, GroupChatsHomeScreenActivity::class.java).apply {
                         putExtra(LOGGED_IN_USER_KEY, json)
                       }
                     startActivity(intentChat)

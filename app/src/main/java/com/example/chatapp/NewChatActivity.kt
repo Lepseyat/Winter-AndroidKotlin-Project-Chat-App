@@ -97,7 +97,6 @@ class NewChatActivity : AppCompatActivity() {
         )
 
       val json = gson.toJson(createGroupChat)
-
       println("json string - $json")
 
       return connection.connectToServer(json)

@@ -14,7 +14,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ChatApp"
         tools:targetApi="31">
-        <activity android:name=".Chat">
+        <activity android:name=".GroupChatsHomeScreenActivity">
 
         </activity>
 
@@ -28,7 +28,7 @@
             android:name=".SignUpActivity"
             android:exported="false" />
         <activity
-            android:name=".GroupChatActivity"
+            android:name=".ChatActivity"
             android:exported="false" />
         <activity
             android:name=".NewChatActivity"

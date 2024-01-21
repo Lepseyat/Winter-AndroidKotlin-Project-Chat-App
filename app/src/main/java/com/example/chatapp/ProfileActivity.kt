@@ -36,7 +36,7 @@ class ProfileActivity : AppCompatActivity() {
     println("loggedInUserJson in FriendsActivity - $loggedInUserJson")
 
     btnChat.setOnClickListener {
-      val intent = Intent(this, Chat::class.java)
+      val intent = Intent(this, GroupChatsHomeScreenActivity::class.java)
       intent.putExtra(User.LOGGED_IN_USER_KEY, loggedInUserJson)
       intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
       startActivity(intent)
@@ -50,11 +50,12 @@ class ProfileActivity : AppCompatActivity() {
     }
 
     signOutButton.setOnClickListener {
+      val loggedInUser = intent?.getSerializableExtra(User.LOGGED_IN_USER_KEY) as? User
+      loggedInUser?.clearSensitiveInformation()
+
       val intent = Intent(this, LoginActivity::class.java)
       startActivity(intent)
       finish()
-
-      // Todo: clear the user session or perform additional cleanup
     }
 
     if (loggedInUserJson.isNotEmpty()) {

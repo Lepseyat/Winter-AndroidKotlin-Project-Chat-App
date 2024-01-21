@@ -146,7 +146,6 @@ class FriendRequestActivity : AppCompatActivity() {
 
   private suspend fun performFriendRequest(senderEmail: String, emailRecipient: String): String {
     try {
-      val utils = Utils()
       val eventType: String = "SendFriendRequest"
       val connection = SocketConnection()
       SocketConnection.getInstance()
@@ -179,7 +178,6 @@ class FriendRequestActivity : AppCompatActivity() {
 
   private suspend fun getFriendRequestsAuthUser(email: String): String {
     try {
-      val utils = Utils()
       val eventType: String = "GetFriendRequests"
       val connection = SocketConnection()
       SocketConnection.getInstance()
@@ -212,7 +210,6 @@ class FriendRequestActivity : AppCompatActivity() {
 
   private suspend fun getIncomingFriendRequests(email: String): String {
     try {
-      val utils = Utils()
       val eventType: String = "GetFriendRequests"
       val connection = SocketConnection()
       SocketConnection.getInstance()

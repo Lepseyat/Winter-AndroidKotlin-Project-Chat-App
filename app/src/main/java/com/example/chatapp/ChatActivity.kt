@@ -35,7 +35,7 @@ import kotlinx.serialization.json.Json
 import java.text.SimpleDateFormat
 import java.util.Date
 
-class GroupChatActivity : AppCompatActivity() {
+class ChatActivity : AppCompatActivity() {
   private val gson = Gson()
   private val utils = Utils()
 
@@ -111,7 +111,7 @@ class GroupChatActivity : AppCompatActivity() {
           btnSendMessage.setOnClickListener {
             var textMessage = editTextMessage.toString()
             if (textMessage.isBlank()) {
-              utils.showToast(this@GroupChatActivity, "Fill the empty field")
+              utils.showToast(this@ChatActivity, "Fill the empty field")
             } else {
               GlobalScope.launch(Dispatchers.Main) {
                 val timestamp = getCurrentTimestamp()
@@ -131,7 +131,7 @@ class GroupChatActivity : AppCompatActivity() {
               }
             }
           }
-          //  handler.postDelayed(updateRunnable, 6000)
+          handler.postDelayed(updateRunnable, 6000)
         } catch (e: Exception) {
           e.printStackTrace()
         }
@@ -148,7 +148,6 @@ class GroupChatActivity : AppCompatActivity() {
     email: String
   ): String {
     try {
-      val utils = Utils()
       val eventType: String = "SendMessage"
       val connection = SocketConnection()
       SocketConnection.getInstance()
@@ -182,7 +181,6 @@ class GroupChatActivity : AppCompatActivity() {
 
   private suspend fun getMessagesByGroupID(groupChatId: String): String {
     try {
-      val utils = Utils()
       val eventType: String = "GetMessages"
       val connection = SocketConnection()
       SocketConnection.getInstance()
@@ -243,7 +241,7 @@ class GroupChatActivity : AppCompatActivity() {
   }
 
   private fun getCurrentTimestamp(): String {
-    val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX")
     return dateFormat.format(Date())
   }
 
@@ -256,11 +254,17 @@ class GroupChatActivity : AppCompatActivity() {
       val messages = parseMessagesResponse(responseGroupChatId)
       println("messages - $messages")
       updateRecyclerView(messages)
+      if (messages.isEmpty()) {
+        imageView.visibility = View.VISIBLE
+        textViewNoChats.visibility = View.VISIBLE
+      } else {
+        imageView.visibility = View.GONE
+        textViewNoChats.visibility = View.GONE
+      }
     }
   }
 
   override fun onDestroy() {
-    // Remove the scheduled updates when the activity is destroyed
     handler.removeCallbacks(updateRunnable)
     super.onDestroy()
   }
@@ -271,7 +275,6 @@ class GroupChatActivity : AppCompatActivity() {
         // Fetch and update messages
         fetchAndUpdateMessages()
 
-        // Schedule the next update after 3 seconds
         handler.postDelayed(this, 3000)
       }
     }

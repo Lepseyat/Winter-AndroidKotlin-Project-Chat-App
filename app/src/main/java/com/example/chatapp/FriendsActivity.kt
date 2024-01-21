@@ -121,7 +121,7 @@ class FriendsActivity : AppCompatActivity() {
     }
 
     btnChat.setOnClickListener {
-      val intent = Intent(this, Chat::class.java)
+      val intent = Intent(this, GroupChatsHomeScreenActivity::class.java)
       intent.putExtra(LOGGED_IN_USER_KEY, loggedInUserJson)
       intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
       startActivity(intent)
