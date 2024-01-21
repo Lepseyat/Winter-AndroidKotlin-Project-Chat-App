@@ -8,16 +8,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.chatapp.R
 import com.example.chatapp.dataclass.UserData
 
-class IncomingFriendRequestAdapter(
-  private var userList: List<UserData>,
-  private var friendRequestId: List<Int>
-) : RecyclerView.Adapter<IncomingFriendRequestAdapter.ViewHolder>() {
-
-  private var onItemClickListener: ((UserData, Int) -> Unit)? = null
-
-  fun setOnItemClickListener(listener: (UserData, Int) -> Unit) {
-    onItemClickListener = listener
-  }
+class PendingFriendRequestAdapter(private var userList: List<UserData>) :
+  RecyclerView.Adapter<PendingFriendRequestAdapter.ViewHolder>() {
 
   class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
     val userNameTextView: TextView = itemView.findViewById(R.id.tvUserName)
@@ -30,23 +22,17 @@ class IncomingFriendRequestAdapter(
   }
 
   override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-    val incomingInvite = userList[position]
-    val incomingFriendRequestId = friendRequestId[position]
-    holder.userNameTextView.text = incomingInvite.username
-    holder.userEmailTextView.text = incomingInvite.email
-
-    holder.itemView.setOnClickListener {
-      onItemClickListener?.invoke(incomingInvite, incomingFriendRequestId)
-    }
+    val sender = userList[position]
+    holder.userNameTextView.text = sender.username
+    holder.userEmailTextView.text = sender.email
   }
 
   override fun getItemCount(): Int {
     return userList.size
   }
 
-  fun updateData(newList: List<UserData>, friendRequestIdList: List<Int>) {
+  fun updateData(newList: List<UserData>) {
     userList = newList
-    friendRequestId = friendRequestIdList
     notifyDataSetChanged()
   }
 }

@@ -1,5 +1,6 @@
 package com.example.chatapp
 
+import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
@@ -13,15 +14,17 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.chatapp.Adapters.MessageAdapter
-import com.example.chatapp.dataclass.GetGroupChatsData
-import com.example.chatapp.dataclass.GroupChatId
-import com.example.chatapp.dataclass.SendMessageByGroupID
-import com.example.chatapp.dataclass.User
-import com.example.chatapp.dataclass.Userdata
+import com.example.chatapp.dataclass.DataRequest
+import com.example.chatapp.dataclass.MessageData
+import com.example.chatapp.dataclass.ServerRequest
+import com.example.chatapp.dataclass.UserData
 import com.example.chatapp.helpers.Utils
 import com.example.chatapp.items.MessageItemDecoration
+import com.example.chatapp.model.GroupChat.Companion.GROUP_CHAT_EMAILS
 import com.example.chatapp.model.GroupChat.Companion.GROUP_CHAT_ID
+import com.example.chatapp.model.GroupChat.Companion.GROUP_CHAT_USERNAMES
 import com.example.chatapp.model.Message
+import com.example.chatapp.model.User
 import com.example.chatapp.model.User.Companion.LOGGED_IN_USER_KEY
 import com.google.gson.Gson
 import com.google.gson.JsonParser
@@ -38,10 +41,11 @@ class GroupChatActivity : AppCompatActivity() {
 
   private lateinit var editTextMessage: EditText
   private lateinit var btnSendMessage: Button
+  private lateinit var btnShowMembers: Button
   private lateinit var imageView: ImageView
   private lateinit var textViewNoChats: TextView
 
-  private lateinit var base64GroupChatId: String
+  private lateinit var GroupChatId: String
 
   private val handler = Handler()
 
@@ -50,16 +54,30 @@ class GroupChatActivity : AppCompatActivity() {
     setContentView(R.layout.activity_group_chat_messages)
 
     btnSendMessage = findViewById(R.id.btnSendMessage)
+    btnShowMembers = findViewById(R.id.btnShowMembers)
     editTextMessage = findViewById(R.id.editTextMessage)
     imageView = findViewById(R.id.imageView)
     textViewNoChats = findViewById(R.id.textViewNoChats)
+
+    val usernames = intent.getStringArrayListExtra(GROUP_CHAT_USERNAMES)
+    val userEmails = intent.getStringArrayListExtra(GROUP_CHAT_EMAILS)
 
     val intent = intent
     val loggedInUserJson = intent?.getStringExtra(LOGGED_IN_USER_KEY) ?: ""
     println(" $loggedInUserJson")
 
     val groupChatId = intent?.getSerializableExtra(GROUP_CHAT_ID) as? Int ?: 0
+    GroupChatId = groupChatId.toString()
     println("groupChatId in GroupChatActivity - $groupChatId")
+
+    btnShowMembers.setOnClickListener {
+      val intent = Intent(this, GroupChatMembersActivity::class.java)
+      intent.putExtra(LOGGED_IN_USER_KEY, loggedInUserJson)
+      intent.putExtra(GROUP_CHAT_ID, groupChatId)
+      intent.putExtra(GROUP_CHAT_USERNAMES, usernames?.let { it1 -> ArrayList(it1) })
+      intent.putExtra(GROUP_CHAT_EMAILS, userEmails?.let { it2 -> ArrayList(it2) })
+      startActivity(intent)
+    }
 
     if (loggedInUserJson.isNotEmpty()) {
 
@@ -69,15 +87,12 @@ class GroupChatActivity : AppCompatActivity() {
 
           var username = user.username
           var email = user.email
+          var GroupChatId = groupChatId.toString()
 
           println("Groupchat activity username, email, password - $username, $email, $groupChatId")
 
-          var base64Username = utils.base64(username)
-          var base64Email = utils.base64(email)
-          base64GroupChatId = utils.base64(groupChatId.toString())
-
           GlobalScope.launch(Dispatchers.Main) {
-            val responseGroupChatId = getMessagesByGroupID(base64GroupChatId)
+            val responseGroupChatId = getMessagesByGroupID(GroupChatId)
             println("Received JSON data: $responseGroupChatId")
 
             val messages = parseMessagesResponse(responseGroupChatId)
@@ -102,23 +117,21 @@ class GroupChatActivity : AppCompatActivity() {
                 val timestamp = getCurrentTimestamp()
 
                 var content = editTextMessage.text.toString()
-                var base64Content = utils.base64(content)
-                var base64Timestamp = utils.base64(timestamp)
                 var attachmentURL = ""
 
                 sendMessageByGroupID(
-                  base64Content,
-                  base64Timestamp,
+                  content,
+                  timestamp,
                   attachmentURL,
-                  base64GroupChatId,
-                  base64Username,
-                  base64Email
+                  GroupChatId,
+                  username,
+                  email
                 )
                 editTextMessage.text.clear()
               }
             }
           }
-          handler.postDelayed(updateRunnable, 1000)
+          //  handler.postDelayed(updateRunnable, 6000)
         } catch (e: Exception) {
           e.printStackTrace()
         }
@@ -136,22 +149,25 @@ class GroupChatActivity : AppCompatActivity() {
   ): String {
     try {
       val utils = Utils()
-      val eventType: String = "SendMessageByGroupID"
-      val encodedEventType = utils.base64(eventType)
+      val eventType: String = "SendMessage"
       val connection = SocketConnection()
       SocketConnection.getInstance()
 
       val sendMessageByGroupID =
-        SendMessageByGroupID(
-          eventType = encodedEventType,
-          Userdata(
-            id = utils.base64("0"),
-            content = content,
-            timestamp = timestamp,
-            attachmentURL = attachmentURL,
-            groupchatid = groupChatId,
-            User(username = username, email = email, password = "")
-          )
+        ServerRequest(
+          eventType = eventType,
+          data =
+            DataRequest(
+              id = groupChatId,
+              message =
+                MessageData(
+                  id = 0,
+                  content = content,
+                  attachmentURL = attachmentURL,
+                  timestamp = timestamp,
+                  sender = UserData(id = 0, username = username, email = email, password = "")
+                )
+            )
         )
 
       val json = gson.toJson(sendMessageByGroupID)
@@ -167,13 +183,12 @@ class GroupChatActivity : AppCompatActivity() {
   private suspend fun getMessagesByGroupID(groupChatId: String): String {
     try {
       val utils = Utils()
-      val eventType: String = "GetMessagesByGroupID"
-      val encodedEventType = utils.base64(eventType)
+      val eventType: String = "GetMessages"
       val connection = SocketConnection()
       SocketConnection.getInstance()
 
       val getGroupChatsData =
-        GetGroupChatsData(eventType = encodedEventType, GroupChatId(id = groupChatId))
+        ServerRequest(eventType = eventType, data = DataRequest(id = groupChatId))
 
       val json = gson.toJson(getGroupChatsData)
 
@@ -190,7 +205,7 @@ class GroupChatActivity : AppCompatActivity() {
     return try {
       val gson = Gson()
       val responseJson = JsonParser.parseString(response).asJsonObject
-      val responseObj = responseJson.getAsJsonObject("response")
+      val responseObj = responseJson.getAsJsonObject("data")
       val messagesJsonElement = responseObj.get("messages") ?: responseObj.get("message")
 
       if (messagesJsonElement != null && messagesJsonElement.isJsonArray) {
@@ -235,7 +250,7 @@ class GroupChatActivity : AppCompatActivity() {
   private fun fetchAndUpdateMessages() {
     // Fetch new messages and update RecyclerView
     GlobalScope.launch(Dispatchers.Main) {
-      val responseGroupChatId = getMessagesByGroupID(base64GroupChatId)
+      val responseGroupChatId = getMessagesByGroupID(GroupChatId)
       println("Received JSON data: $responseGroupChatId")
 
       val messages = parseMessagesResponse(responseGroupChatId)

@@ -1,6 +1,5 @@
 package com.example.chatapp.model
 
-import com.example.chatapp.helpers.Utils
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -18,16 +17,6 @@ data class Message(
     val password: String,
     val username: String
   )
-
-  fun base64EncodeMessage(): Array<String> {
-    return arrayOf(
-      Utils.base64(id),
-      Utils.base64(content),
-      // Don't encode the attachmentURL, since it's already done via filePicker
-      attachmentURL,
-      Utils.base64(timestamp),
-    )
-  }
 
   override fun toString(): String {
     return "Message(id=$id, content='$content', attachmentURL='$attachmentURL', timestamp='$timestamp', sender=$sender)"

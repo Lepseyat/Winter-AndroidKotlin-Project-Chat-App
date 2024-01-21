@@ -11,9 +11,9 @@ import java.net.Socket
 
 class SocketConnection constructor() {
   companion object SocketSingleton {
-    // private const val SERVER_ADDRESS = "10.0.2.2"
+    private const val SERVER_ADDRESS = "10.0.2.2"
 
-    private const val SERVER_ADDRESS = "192.168.10.103"
+    // private const val SERVER_ADDRESS = "192.168.10.103"
 
     private const val PORT = 8081
 

@@ -8,14 +8,14 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.chatapp.R
 import com.example.chatapp.dataclass.UserData
 
-class IncomingFriendRequestAdapter(
+class MembersInAGroupChatAdapter(
   private var userList: List<UserData>,
-  private var friendRequestId: List<Int>
-) : RecyclerView.Adapter<IncomingFriendRequestAdapter.ViewHolder>() {
+  private var friendsEmails: List<String>
+) : RecyclerView.Adapter<MembersInAGroupChatAdapter.ViewHolder>() {
 
-  private var onItemClickListener: ((UserData, Int) -> Unit)? = null
+  private var onItemClickListener: ((UserData, String) -> Unit)? = null
 
-  fun setOnItemClickListener(listener: (UserData, Int) -> Unit) {
+  fun setOnItemClickListener(listener: (UserData, String) -> Unit) {
     onItemClickListener = listener
   }
 
@@ -31,22 +31,23 @@ class IncomingFriendRequestAdapter(
 
   override fun onBindViewHolder(holder: ViewHolder, position: Int) {
     val incomingInvite = userList[position]
-    val incomingFriendRequestId = friendRequestId[position]
+    val friendEmail = friendsEmails[position]
+
+    // Bind your data to the ViewHolder
     holder.userNameTextView.text = incomingInvite.username
     holder.userEmailTextView.text = incomingInvite.email
 
-    holder.itemView.setOnClickListener {
-      onItemClickListener?.invoke(incomingInvite, incomingFriendRequestId)
-    }
+    // Check if onItemClickListener is not null before invoking it
+    holder.itemView.setOnClickListener { onItemClickListener?.invoke(incomingInvite, friendEmail) }
   }
 
   override fun getItemCount(): Int {
     return userList.size
   }
 
-  fun updateData(newList: List<UserData>, friendRequestIdList: List<Int>) {
+  fun updateData(newList: List<UserData>, friendsEmailsList: List<String>) {
     userList = newList
-    friendRequestId = friendRequestIdList
+    friendsEmails = friendsEmailsList
     notifyDataSetChanged()
   }
 }

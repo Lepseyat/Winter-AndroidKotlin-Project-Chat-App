@@ -32,15 +32,19 @@ class ProfileActivity : AppCompatActivity() {
     emailTextView = findViewById(R.id.emailTextView)
     signOutButton = findViewById(R.id.signOutButton)
 
-    // new activity or finish
+    val loggedInUserJson = intent?.getSerializableExtra(User.LOGGED_IN_USER_KEY) as? String ?: ""
+    println("loggedInUserJson in FriendsActivity - $loggedInUserJson")
+
     btnChat.setOnClickListener {
       val intent = Intent(this, Chat::class.java)
+      intent.putExtra(User.LOGGED_IN_USER_KEY, loggedInUserJson)
       intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
       startActivity(intent)
     }
 
     btnFriends.setOnClickListener {
       val intent = Intent(this, FriendsActivity::class.java)
+      intent.putExtra(User.LOGGED_IN_USER_KEY, loggedInUserJson)
       startActivity(intent)
       onPause()
     }
@@ -52,8 +56,6 @@ class ProfileActivity : AppCompatActivity() {
 
       // Todo: clear the user session or perform additional cleanup
     }
-
-    val loggedInUserJson = intent?.getSerializableExtra(User.LOGGED_IN_USER_KEY) as? String ?: ""
 
     if (loggedInUserJson.isNotEmpty()) {
       lifecycleScope.launch(Dispatchers.Main) {

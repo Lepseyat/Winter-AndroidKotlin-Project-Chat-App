@@ -2,35 +2,46 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:padding="3dp">
 
-    <LinearLayout
-        android:id="@+id/llUserItem"
-        android:layout_width="match_parent"
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="62dp"
+        android:layout_height="45dp"
+        android:layout_marginStart="8dp"
+        android:src="@drawable/friend_icon"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tvUserName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Username"
+        app:layout_constraintStart_toEndOf="@+id/imageView"
+        app:layout_constraintEnd_toStartOf="@+id/guideline"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp"
+        app:layout_constraintGuide_percent="0.43" />
+
+    <TextView
+        android:id="@+id/tvUserEmail"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="useremail@example.com"
+        app:layout_constraintStart_toEndOf="@+id/guideline"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent">
-
-        <TextView
-            android:id="@+id/tvUserName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="User Name" />
-
-        <TextView
-            android:id="@+id/tvUserEmail"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="user@email.com" />
-
-        <TextView
-            android:id="@+id/tvFriendRequestStatus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Pending" />
-
-    </LinearLayout>
-
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginStart="8dp" />
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -6,8 +6,9 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
-import com.example.chatapp.dataclass.UserDataPayload
-import com.example.chatapp.dataclass.UserSignUpActivity
+import com.example.chatapp.dataclass.DataRequest
+import com.example.chatapp.dataclass.ServerRequest
+import com.example.chatapp.dataclass.UserData
 import com.example.chatapp.helpers.Utils
 import com.google.gson.Gson
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -20,9 +21,7 @@ class SignUpActivity : AppCompatActivity() {
   private lateinit var edtName: EditText
   private lateinit var edtEmail: EditText
   private lateinit var edtPassword: EditText
-  private lateinit var btnSignUp:
-    Button // deklarira private promenliva s ime btnSignUp, lateinit - shte se izpolzva po kysno,
-  // var - stoinosta moje da byde promenena
+  private lateinit var btnSignUp: Button
   private lateinit var btnBack: Button
 
   private val gson = Gson()
@@ -45,9 +44,6 @@ class SignUpActivity : AppCompatActivity() {
       val password = edtPassword.text.toString()
 
       val utils = Utils()
-      val base64UserName = utils.base64(userName)
-      val base64Email = utils.base64(email)
-      val base64Password = utils.base64(password)
 
       if (userName.isBlank() || email.isBlank() || password.isBlank()) {
         utils.showToast(this, "Fill the empty field")
@@ -56,8 +52,7 @@ class SignUpActivity : AppCompatActivity() {
           GlobalScope.launch(
             Dispatchers.Main
           ) { // work with database - reading/writing to files / network calls
-            val receivedMessageFromServer =
-              performSignUp(base64UserName, base64Email, base64Password)
+            val receivedMessageFromServer = performSignUp(userName, email, password)
 
             val status = utils.gsonResponse(receivedMessageFromServer)
 
@@ -83,16 +78,17 @@ class SignUpActivity : AppCompatActivity() {
 
   suspend fun performSignUp(userName: String, email: String, password: String): String {
     try {
-      val utils = Utils()
       val eventType: String = "SignUp"
-      val encodedEventType = utils.base64(eventType)
       val connection = SocketConnection()
       SocketConnection.getInstance()
 
       val signUpActivity =
-        UserSignUpActivity(
-          eventType = encodedEventType,
-          data = UserDataPayload(username = userName, email = email, password = password)
+        ServerRequest(
+          eventType = eventType,
+          data =
+            DataRequest(
+              user = UserData(id = 0, username = userName, email = email, password = password)
+            )
         )
 
       val json = gson.toJson(signUpActivity)
