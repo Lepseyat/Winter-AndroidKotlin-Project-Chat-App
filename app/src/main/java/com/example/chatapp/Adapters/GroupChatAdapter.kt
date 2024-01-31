@@ -22,7 +22,6 @@ class GroupChatAdapter(private val context: Context, private var groupChats: Lis
   override fun onBindViewHolder(holder: GroupChatViewHolder, position: Int) {
     val groupChat = groupChats[position]
     holder.groupChatName.text = groupChat.name
-    // Set other views as needed
   }
 
   override fun getItemCount(): Int {

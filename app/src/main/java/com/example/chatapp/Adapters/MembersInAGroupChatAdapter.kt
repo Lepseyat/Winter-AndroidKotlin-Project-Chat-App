@@ -10,7 +10,7 @@ import com.example.chatapp.dataclass.UserData
 
 class MembersInAGroupChatAdapter(
   private var userList: List<UserData>,
-  private var friendsEmails: List<String>
+  private var friendsEmails: List<String>,
 ) : RecyclerView.Adapter<MembersInAGroupChatAdapter.ViewHolder>() {
 
   private var onItemClickListener: ((UserData, String) -> Unit)? = null
@@ -33,11 +33,9 @@ class MembersInAGroupChatAdapter(
     val incomingInvite = userList[position]
     val friendEmail = friendsEmails[position]
 
-    // Bind your data to the ViewHolder
     holder.userNameTextView.text = incomingInvite.username
     holder.userEmailTextView.text = incomingInvite.email
 
-    // Check if onItemClickListener is not null before invoking it
     holder.itemView.setOnClickListener { onItemClickListener?.invoke(incomingInvite, friendEmail) }
   }
 

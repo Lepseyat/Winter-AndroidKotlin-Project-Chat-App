@@ -10,9 +10,8 @@ class MessageItemDecoration(private val spaceHeight: Int) : RecyclerView.ItemDec
     outRect: Rect,
     view: View,
     parent: RecyclerView,
-    state: RecyclerView.State
+    state: RecyclerView.State,
   ) {
-    // Apply spacing to all items except the last one
     if (parent.getChildAdapterPosition(view) != parent.adapter?.itemCount?.minus(1)) {
       outRect.bottom = spaceHeight
     }
