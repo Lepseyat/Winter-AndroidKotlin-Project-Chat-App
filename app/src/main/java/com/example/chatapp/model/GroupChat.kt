@@ -2,12 +2,7 @@ package com.example.chatapp.model
 
 import com.example.chatapp.dataclass.UserData
 
-class GroupChat(
-  var id: Int,
-  var name: String,
-  var users: List<UserData>,
-  var messages: List<Message> = listOf()
-) {
+class GroupChat(var id: Int, var name: String, var users: List<UserData>) {
   fun getIdGroupChat(): Int {
     return id
   }

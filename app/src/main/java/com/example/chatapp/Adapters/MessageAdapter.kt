@@ -29,7 +29,6 @@ class MessageAdapter(private val context: Context, private val messages: List<Me
   override fun onBindViewHolder(holder: MessageViewHolder, position: Int) {
     val message = messages[position]
 
-    // Bind data to views
     Log.d("MessageAdapter", "Binding message: $message")
     holder.textViewUsername.text = message.sender.username
     holder.textViewContent.text = message.content

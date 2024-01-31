@@ -5,13 +5,10 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
-import com.example.chatapp.dataclass.DataRequest
-import com.example.chatapp.dataclass.ServerRequest
-import com.example.chatapp.dataclass.UserData
 import com.example.chatapp.helpers.Utils
 import com.example.chatapp.model.User
 import com.example.chatapp.model.User.Companion.LOGGED_IN_USER_KEY
-import com.google.gson.Gson
+import com.example.chatapp.repository.LoginRepo
 import com.google.gson.JsonParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -25,11 +22,11 @@ class LoginActivity : AppCompatActivity() {
   private lateinit var btnLogin: Button
   private lateinit var btnSignUp: Button
 
-  private val gson = Gson()
-
   private var usernameUser = ""
   private var emailUser = ""
   private var passwordUser = ""
+
+  private val loginrepo = LoginRepo()
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -56,10 +53,8 @@ class LoginActivity : AppCompatActivity() {
         utils.showToast(this, "Fill the empty field")
       } else {
         if (utils.isValidEmail(email)) {
-          GlobalScope.launch(
-            Dispatchers.Main
-          ) { // work with database - reading/writing to files / network calls
-            val receivedMessageFromServer = performLogin(email, password)
+          GlobalScope.launch(Dispatchers.Main) {
+            val receivedMessageFromServer = loginrepo.performLogin(email, password)
 
             val status = utils.gsonResponse(receivedMessageFromServer)
             println("Status for login: $status")
@@ -105,31 +100,6 @@ class LoginActivity : AppCompatActivity() {
           utils.showToast(this, "Incorrect email or password")
         }
       }
-    }
-  }
-
-  private suspend fun performLogin(email: String, password: String): String {
-    try {
-      val utils = Utils()
-      val eventType: String = "Login"
-      val connection = SocketConnection()
-      SocketConnection.getInstance()
-
-      val loginActivity =
-        ServerRequest(
-          eventType = eventType,
-          data =
-            DataRequest(user = UserData(id = 0, username = "", email = email, password = password))
-        )
-
-      val json = gson.toJson(loginActivity)
-
-      println("json string - $json")
-
-      return connection.connectToServer(json)
-    } catch (e: Exception) {
-      e.printStackTrace()
-      return "Connection failed: ${e.message}"
     }
   }
 }

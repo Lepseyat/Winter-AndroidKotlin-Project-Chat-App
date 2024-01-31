@@ -125,7 +125,7 @@ class ChatActivity : AppCompatActivity() {
                   attachmentURL,
                   GroupChatId,
                   username,
-                  email
+                  email,
                 )
                 editTextMessage.text.clear()
               }
@@ -145,7 +145,7 @@ class ChatActivity : AppCompatActivity() {
     attachmentURL: String,
     groupChatId: String,
     username: String,
-    email: String
+    email: String,
   ): String {
     try {
       val eventType: String = "SendMessage"
@@ -164,9 +164,9 @@ class ChatActivity : AppCompatActivity() {
                   content = content,
                   attachmentURL = attachmentURL,
                   timestamp = timestamp,
-                  sender = UserData(id = 0, username = username, email = email, password = "")
-                )
-            )
+                  sender = UserData(id = 0, username = username, email = email, password = ""),
+                ),
+            ),
         )
 
       val json = gson.toJson(sendMessageByGroupID)
@@ -231,12 +231,10 @@ class ChatActivity : AppCompatActivity() {
     recyclerView.adapter = adapter
     recyclerView.layoutManager = LinearLayoutManager(this)
 
-    // Apply custom item decoration to reduce the gap between items
     val itemDecoration =
       MessageItemDecoration(spaceHeight = resources.getDimensionPixelSize(R.dimen.item_space))
     recyclerView.addItemDecoration(itemDecoration)
 
-    // Scroll to the bottom
     recyclerView.scrollToPosition(adapter.itemCount - 1)
   }
 
@@ -246,7 +244,6 @@ class ChatActivity : AppCompatActivity() {
   }
 
   private fun fetchAndUpdateMessages() {
-    // Fetch new messages and update RecyclerView
     GlobalScope.launch(Dispatchers.Main) {
       val responseGroupChatId = getMessagesByGroupID(GroupChatId)
       println("Received JSON data: $responseGroupChatId")
