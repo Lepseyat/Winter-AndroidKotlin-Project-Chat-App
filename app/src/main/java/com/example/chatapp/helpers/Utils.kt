@@ -1,12 +1,17 @@
 package com.example.chatapp.helpers
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Patterns
 import android.widget.Toast
 import com.example.chatapp.dataclass.ServerResponse
 import com.google.gson.Gson
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
+import java.text.SimpleDateFormat
+import java.util.Date
 
 class Utils {
 
@@ -35,6 +40,17 @@ class Utils {
 
     logger.info("$tag - $logMessage")
     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+  }
+
+  fun ignoreUnknownKeysJson(jsonString: String): ServerResponse {
+
+    return Json { ignoreUnknownKeys = true }.decodeFromString<ServerResponse>(jsonString)
+  }
+
+  @SuppressLint("SimpleDateFormat")
+  fun getCurrentTimestamp(): String {
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX")
+    return dateFormat.format(Date())
   }
 
   fun gsonResponse(response: String): String {

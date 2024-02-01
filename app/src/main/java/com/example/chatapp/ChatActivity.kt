@@ -1,9 +1,9 @@
 package com.example.chatapp
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
-import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
@@ -11,43 +11,33 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.chatapp.Adapters.MessageAdapter
-import com.example.chatapp.dataclass.DataRequest
-import com.example.chatapp.dataclass.MessageData
-import com.example.chatapp.dataclass.ServerRequest
-import com.example.chatapp.dataclass.UserData
 import com.example.chatapp.helpers.Utils
-import com.example.chatapp.items.MessageItemDecoration
 import com.example.chatapp.model.GroupChat.Companion.GROUP_CHAT_EMAILS
 import com.example.chatapp.model.GroupChat.Companion.GROUP_CHAT_ID
 import com.example.chatapp.model.GroupChat.Companion.GROUP_CHAT_USERNAMES
-import com.example.chatapp.model.Message
 import com.example.chatapp.model.User
 import com.example.chatapp.model.User.Companion.LOGGED_IN_USER_KEY
-import com.google.gson.Gson
-import com.google.gson.JsonParser
+import com.example.chatapp.repository.SharedChatRepo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-import java.text.SimpleDateFormat
-import java.util.Date
 
 class ChatActivity : AppCompatActivity() {
-  private val gson = Gson()
+  private val chatRepo = SharedChatRepo()
   private val utils = Utils()
+  private val handler = Handler()
 
   private lateinit var editTextMessage: EditText
   private lateinit var btnSendMessage: Button
   private lateinit var btnShowMembers: Button
   private lateinit var imageView: ImageView
   private lateinit var textViewNoChats: TextView
+  private lateinit var recyclerViewMessages: RecyclerView
+  private val context: Context = this
 
   private lateinit var GroupChatId: String
-
-  private val handler = Handler()
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -58,6 +48,7 @@ class ChatActivity : AppCompatActivity() {
     editTextMessage = findViewById(R.id.editTextMessage)
     imageView = findViewById(R.id.imageView)
     textViewNoChats = findViewById(R.id.textViewNoChats)
+    recyclerViewMessages = findViewById(R.id.recyclerViewMessages)
 
     val usernames = intent.getStringArrayListExtra(GROUP_CHAT_USERNAMES)
     val userEmails = intent.getStringArrayListExtra(GROUP_CHAT_EMAILS)
@@ -92,10 +83,10 @@ class ChatActivity : AppCompatActivity() {
           println("Groupchat activity username, email, password - $username, $email, $groupChatId")
 
           GlobalScope.launch(Dispatchers.Main) {
-            val responseGroupChatId = getMessagesByGroupID(GroupChatId)
+            val responseGroupChatId = chatRepo.getMessagesByGroupID(GroupChatId)
             println("Received JSON data: $responseGroupChatId")
 
-            val messages = parseMessagesResponse(responseGroupChatId)
+            val messages = chatRepo.parseMessagesResponse(responseGroupChatId)
             println("messages - $messages")
 
             if (messages.isEmpty()) {
@@ -105,7 +96,7 @@ class ChatActivity : AppCompatActivity() {
               imageView.visibility = View.GONE
               textViewNoChats.visibility = View.GONE
             }
-            updateRecyclerView(messages)
+            chatRepo.updateRecyclerView(context, messages, recyclerViewMessages)
           }
 
           btnSendMessage.setOnClickListener {
@@ -114,12 +105,12 @@ class ChatActivity : AppCompatActivity() {
               utils.showToast(this@ChatActivity, "Fill the empty field")
             } else {
               GlobalScope.launch(Dispatchers.Main) {
-                val timestamp = getCurrentTimestamp()
+                val timestamp = utils.getCurrentTimestamp()
 
                 var content = editTextMessage.text.toString()
                 var attachmentURL = ""
 
-                sendMessageByGroupID(
+                chatRepo.sendMessageByGroupID(
                   content,
                   timestamp,
                   attachmentURL,
@@ -139,128 +130,6 @@ class ChatActivity : AppCompatActivity() {
     }
   }
 
-  private suspend fun sendMessageByGroupID(
-    content: String,
-    timestamp: String,
-    attachmentURL: String,
-    groupChatId: String,
-    username: String,
-    email: String,
-  ): String {
-    try {
-      val eventType: String = "SendMessage"
-      val connection = SocketConnection()
-      SocketConnection.getInstance()
-
-      val sendMessageByGroupID =
-        ServerRequest(
-          eventType = eventType,
-          data =
-            DataRequest(
-              id = groupChatId,
-              message =
-                MessageData(
-                  id = 0,
-                  content = content,
-                  attachmentURL = attachmentURL,
-                  timestamp = timestamp,
-                  sender = UserData(id = 0, username = username, email = email, password = ""),
-                ),
-            ),
-        )
-
-      val json = gson.toJson(sendMessageByGroupID)
-      println("sendMessageByGroupID json - $json")
-
-      return connection.connectToServer(json)
-    } catch (e: Exception) {
-      e.printStackTrace()
-      return "Connection failed: ${e.message}"
-    }
-  }
-
-  private suspend fun getMessagesByGroupID(groupChatId: String): String {
-    try {
-      val eventType: String = "GetMessages"
-      val connection = SocketConnection()
-      SocketConnection.getInstance()
-
-      val getGroupChatsData =
-        ServerRequest(eventType = eventType, data = DataRequest(id = groupChatId))
-
-      val json = gson.toJson(getGroupChatsData)
-
-      println("json string - $json")
-
-      return connection.connectToServer(json)
-    } catch (e: Exception) {
-      e.printStackTrace()
-      return "Connection failed: ${e.message}"
-    }
-  }
-
-  private fun parseMessagesResponse(response: String): List<Message> {
-    return try {
-      val gson = Gson()
-      val responseJson = JsonParser.parseString(response).asJsonObject
-      val responseObj = responseJson.getAsJsonObject("data")
-      val messagesJsonElement = responseObj.get("messages") ?: responseObj.get("message")
-
-      if (messagesJsonElement != null && messagesJsonElement.isJsonArray) {
-        val messages =
-          messagesJsonElement.asJsonArray.map {
-            gson.fromJson(it.asJsonObject, Message::class.java)
-          }
-
-        println("Parsed messages: $messages")
-        messages
-      } else {
-        println("Unexpected JSON structure. Response JSON: $responseJson")
-        emptyList()
-      }
-    } catch (e: Exception) {
-      e.printStackTrace()
-      emptyList()
-    }
-  }
-
-  private fun updateRecyclerView(messages: List<Message>) {
-    Log.d("UpdateRecyclerView", "Messages: $messages")
-    val adapter = MessageAdapter(this, messages)
-    val recyclerView: RecyclerView = findViewById(R.id.recyclerViewMessages)
-    recyclerView.adapter = adapter
-    recyclerView.layoutManager = LinearLayoutManager(this)
-
-    val itemDecoration =
-      MessageItemDecoration(spaceHeight = resources.getDimensionPixelSize(R.dimen.item_space))
-    recyclerView.addItemDecoration(itemDecoration)
-
-    recyclerView.scrollToPosition(adapter.itemCount - 1)
-  }
-
-  private fun getCurrentTimestamp(): String {
-    val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX")
-    return dateFormat.format(Date())
-  }
-
-  private fun fetchAndUpdateMessages() {
-    GlobalScope.launch(Dispatchers.Main) {
-      val responseGroupChatId = getMessagesByGroupID(GroupChatId)
-      println("Received JSON data: $responseGroupChatId")
-
-      val messages = parseMessagesResponse(responseGroupChatId)
-      println("messages - $messages")
-      updateRecyclerView(messages)
-      if (messages.isEmpty()) {
-        imageView.visibility = View.VISIBLE
-        textViewNoChats.visibility = View.VISIBLE
-      } else {
-        imageView.visibility = View.GONE
-        textViewNoChats.visibility = View.GONE
-      }
-    }
-  }
-
   override fun onDestroy() {
     handler.removeCallbacks(updateRunnable)
     super.onDestroy()
@@ -269,10 +138,15 @@ class ChatActivity : AppCompatActivity() {
   private val updateRunnable =
     object : Runnable {
       override fun run() {
-        // Fetch and update messages
-        fetchAndUpdateMessages()
+        chatRepo.fetchAndUpdateMessages(
+          context,
+          GroupChatId,
+          imageView,
+          textViewNoChats,
+          recyclerViewMessages,
+        )
 
-        handler.postDelayed(this, 3000)
+        handler.postDelayed(this, 5000)
       }
     }
 }

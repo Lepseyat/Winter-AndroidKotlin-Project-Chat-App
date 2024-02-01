@@ -1,26 +1,19 @@
 package com.example.chatapp
 
-import android.app.AlertDialog
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.chatapp.Adapters.AddGroupChatMemberAdapter
-import com.example.chatapp.dataclass.DataRequest
-import com.example.chatapp.dataclass.FilterRequest
 import com.example.chatapp.dataclass.FriendRequestData
-import com.example.chatapp.dataclass.ServerRequest
-import com.example.chatapp.dataclass.ServerResponse
-import com.example.chatapp.dataclass.UserData
 import com.example.chatapp.helpers.Utils
 import com.example.chatapp.model.GroupChat
 import com.example.chatapp.model.User
-import com.google.gson.Gson
+import com.example.chatapp.repository.SharedGroupChatMembersRepo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
 class AddMemberToGroupChatActivity : AppCompatActivity() {
@@ -33,7 +26,7 @@ class AddMemberToGroupChatActivity : AppCompatActivity() {
   private var friendEmailList = listOf<String>()
   private var loggedInUserEmail = ""
 
-  private val gson = Gson()
+  private val sharedGroupChatMembersRepo = SharedGroupChatMembersRepo()
   private val utils = Utils()
 
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -70,15 +63,15 @@ class AddMemberToGroupChatActivity : AppCompatActivity() {
     recyclerViewGroupMembers.adapter = addGroupChatMemberAdapter
 
     addGroupChatMemberAdapter.setOnItemClickListener { user, friendEmail ->
-      showFriendsDialog(user, friendEmail)
+      sharedGroupChatMembersRepo.showFriendsDialog(this, user, friendEmail, GroupChatId!!)
     }
 
     GlobalScope.launch(Dispatchers.Main) {
       try {
-        val getFriendsAuthUserJSON = getFriendsAuthUser(loggedInUserEmail)
+        val getFriendsAuthUserJSON =
+          sharedGroupChatMembersRepo.getFriendsAuthUser(loggedInUserEmail)
 
-        val responseFriends =
-          Json { ignoreUnknownKeys = true }.decodeFromString<ServerResponse>(getFriendsAuthUserJSON)
+        val responseFriends = utils.ignoreUnknownKeysJson(getFriendsAuthUserJSON)
         val friendsList: List<FriendRequestData> =
           responseFriends.data.friendrequests ?: emptyList()
 
@@ -92,93 +85,6 @@ class AddMemberToGroupChatActivity : AppCompatActivity() {
         e.printStackTrace()
         println("Error in getFriendRequestsAuthUser: ${e.message}")
       }
-    }
-  }
-
-  private fun showFriendsDialog(user: UserData, friendEmail: String) {
-    val alertDialogBuilder = AlertDialog.Builder(this)
-    alertDialogBuilder.setTitle("Friends")
-    alertDialogBuilder.setMessage("Do you want to add ${user.username} to your group chat?")
-
-    println("friendEmail - $friendEmail")
-
-    alertDialogBuilder.setPositiveButton("Add member") { _, _ ->
-      GlobalScope.launch {
-        GroupChatId?.let {
-          val addUserToGroupChatJson = addUserToGroupChat(it, friendEmail)
-
-          val addUserResponse =
-            Json { ignoreUnknownKeys = true }
-              .decodeFromString<ServerResponse>(addUserToGroupChatJson)
-
-          runOnUiThread {
-            // Show Toast on the main UI thread
-            utils.showToast(this@AddMemberToGroupChatActivity, addUserResponse.message)
-          }
-        }
-      }
-    }
-
-    alertDialogBuilder.setNegativeButton("No") { dialog, _ -> dialog.dismiss() }
-
-    val alertDialog: AlertDialog = alertDialogBuilder.create()
-    alertDialog.show()
-  }
-
-  private suspend fun getFriendsAuthUser(email: String): String {
-    try {
-      val eventType: String = "GetFriendRequests"
-      val connection = SocketConnection()
-      SocketConnection.getInstance()
-
-      val getFriendsAuthUser =
-        ServerRequest(
-          eventType = eventType,
-          data = DataRequest(user = UserData(id = 0, username = "", email = email, password = "")),
-          filter =
-            FilterRequest(
-              FriendRequestData(
-                id = 0,
-                status = "Accepted",
-                sender = UserData(id = 0, username = "", email = email, password = ""),
-                recipient = UserData(id = 0, username = "", email = email, password = "")
-              )
-            )
-        )
-
-      val json = gson.toJson(getFriendsAuthUser)
-      println("json string - $json")
-
-      return connection.connectToServer(json)
-    } catch (e: Exception) {
-      e.printStackTrace()
-      return "Connection failed: ${e.message}"
-    }
-  }
-
-  private suspend fun addUserToGroupChat(groupChatId: Int, email: String): String {
-    try {
-      val eventType: String = "AddUserToGroupChat"
-      val connection = SocketConnection()
-      SocketConnection.getInstance()
-
-      val getFriendsAuthUser =
-        ServerRequest(
-          eventType = eventType,
-          data =
-            DataRequest(
-              id = groupChatId.toString(),
-              user = UserData(id = 0, username = "", email = email, password = "")
-            ),
-        )
-
-      val json = gson.toJson(getFriendsAuthUser)
-      println("json string - $json")
-
-      return connection.connectToServer(json)
-    } catch (e: Exception) {
-      e.printStackTrace()
-      return "Connection failed: ${e.message}"
     }
   }
 }

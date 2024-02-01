@@ -4,13 +4,9 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
-import com.example.chatapp.dataclass.DataRequest
-import com.example.chatapp.dataclass.GroupChatData
-import com.example.chatapp.dataclass.ServerRequest
-import com.example.chatapp.dataclass.UserData
 import com.example.chatapp.helpers.Utils
 import com.example.chatapp.model.User
-import com.google.gson.Gson
+import com.example.chatapp.repository.SharedChatRepo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -22,7 +18,7 @@ class NewChatActivity : AppCompatActivity() {
   private lateinit var edtGroupName: EditText
   private lateinit var btnCreateGroupChat: Button
 
-  private val gson = Gson()
+  private val sharedChatRepo = SharedChatRepo()
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -59,7 +55,7 @@ class NewChatActivity : AppCompatActivity() {
           GlobalScope.launch(Dispatchers.Main) {
             println("UserEmail in button - $userEmail")
 
-            val receivedMessageFromServer = createGroupChat(groupChatName, userEmail)
+            val receivedMessageFromServer = sharedChatRepo.createGroupChat(groupChatName, userEmail)
 
             val status = utils.gsonResponse(receivedMessageFromServer)
             println("Status for new group chat: $status")
@@ -73,36 +69,6 @@ class NewChatActivity : AppCompatActivity() {
           e.printStackTrace()
         }
       }
-    }
-  }
-
-  private suspend fun createGroupChat(groupChatName: String, userEmail: String): String {
-    try {
-      val eventType: String = "CreateGroupChat"
-      val connection = SocketConnection()
-      SocketConnection.getInstance()
-
-      val createGroupChat =
-        ServerRequest(
-          eventType = eventType,
-          data =
-            DataRequest(
-              groupchat =
-                GroupChatData(
-                  id = 0,
-                  name = groupChatName,
-                  users = listOf(UserData(id = 0, username = "", email = userEmail, password = ""))
-                )
-            )
-        )
-
-      val json = gson.toJson(createGroupChat)
-      println("json string - $json")
-
-      return connection.connectToServer(json)
-    } catch (e: Exception) {
-      e.printStackTrace()
-      return "Connection failed: ${e.message}"
     }
   }
 }

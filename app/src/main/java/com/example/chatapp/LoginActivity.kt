@@ -8,7 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.chatapp.helpers.Utils
 import com.example.chatapp.model.User
 import com.example.chatapp.model.User.Companion.LOGGED_IN_USER_KEY
-import com.example.chatapp.repository.LoginRepo
+import com.example.chatapp.repository.UserRepo
 import com.google.gson.JsonParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -26,7 +26,7 @@ class LoginActivity : AppCompatActivity() {
   private var emailUser = ""
   private var passwordUser = ""
 
-  private val loginrepo = LoginRepo()
+  private val loginRepo = UserRepo()
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -54,7 +54,7 @@ class LoginActivity : AppCompatActivity() {
       } else {
         if (utils.isValidEmail(email)) {
           GlobalScope.launch(Dispatchers.Main) {
-            val receivedMessageFromServer = loginrepo.performLogin(email, password)
+            val receivedMessageFromServer = loginRepo.performLogin(email, password)
 
             val status = utils.gsonResponse(receivedMessageFromServer)
             println("Status for login: $status")

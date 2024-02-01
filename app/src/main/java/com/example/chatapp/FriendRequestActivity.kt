@@ -1,6 +1,5 @@
 package com.example.chatapp
 
-import android.app.AlertDialog
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
@@ -9,21 +8,15 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.chatapp.Adapters.IncomingFriendRequestAdapter
 import com.example.chatapp.Adapters.PendingFriendRequestAdapter
-import com.example.chatapp.dataclass.DataRequest
-import com.example.chatapp.dataclass.FilterRequest
 import com.example.chatapp.dataclass.FriendRequestData
-import com.example.chatapp.dataclass.ServerRequest
-import com.example.chatapp.dataclass.ServerResponse
-import com.example.chatapp.dataclass.UserData
 import com.example.chatapp.helpers.Utils
 import com.example.chatapp.model.User
 import com.example.chatapp.model.User.Companion.LOGGED_IN_USER_KEY
-import com.google.gson.Gson
+import com.example.chatapp.repository.SharedFriendRequestRepo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
 class FriendRequestActivity : AppCompatActivity() {
@@ -36,7 +29,8 @@ class FriendRequestActivity : AppCompatActivity() {
   private lateinit var pendingUserAdapter: PendingFriendRequestAdapter
   private lateinit var incomingFriendRequestAdapter: IncomingFriendRequestAdapter
 
-  private val gson = Gson()
+  private val sharedFriendRequestRepo = SharedFriendRequestRepo()
+  private val utils = Utils()
 
   private var userEmail = ""
   private var friendRequestId = listOf<Int>()
@@ -58,14 +52,12 @@ class FriendRequestActivity : AppCompatActivity() {
     recyclerViewFriendInvitations.layoutManager = LinearLayoutManager(this)
     recyclerViewFriendInvitations.adapter = incomingFriendRequestAdapter
 
-    incomingFriendRequestAdapter.setOnItemClickListener { user, friendid ->
-      showFriendRequestDialog(user, friendid)
+    incomingFriendRequestAdapter.setOnItemClickListener { user, friendId ->
+      sharedFriendRequestRepo.showFriendRequestDialog(this, user, friendId)
     }
 
     val loggedInUserJson = intent?.getSerializableExtra(LOGGED_IN_USER_KEY) as? String ?: ""
     println("loggedInUserJson in ProfileActivity - $loggedInUserJson")
-
-    val utils = Utils()
 
     if (loggedInUserJson.isNotEmpty()) {
       try {
@@ -83,28 +75,26 @@ class FriendRequestActivity : AppCompatActivity() {
       try {
 
         // Pending friend requests
-        val getFriendRequestsAuthUserJSON = getFriendRequestsAuthUser(userEmail)
-        val responsePendingFriend =
-          Json { ignoreUnknownKeys = true }
-            .decodeFromString<ServerResponse>(getFriendRequestsAuthUserJSON)
+        val getFriendRequestsAuthUserJSON =
+          sharedFriendRequestRepo.getFriendRequestsAuthUser(userEmail)
+        val responsePendingFriend = utils.ignoreUnknownKeysJson(getFriendRequestsAuthUserJSON)
         val friendRequests: List<FriendRequestData> =
           responsePendingFriend.data.friendrequests ?: emptyList()
         val pendingUsers = friendRequests.map { it.recipient }
+
         pendingUserAdapter.updateData(pendingUsers)
 
         // Incoming friend requests
-        val getIncomingFriendRequestsJSON = getIncomingFriendRequests(userEmail)
-        println("getPendingFriendRequestsJSON - $getIncomingFriendRequestsJSON")
+        val getIncomingFriendRequestsJSON =
+          sharedFriendRequestRepo.getIncomingFriendRequests(userEmail)
 
-        val responseIncomingFriend =
-          Json { ignoreUnknownKeys = true }
-            .decodeFromString<ServerResponse>(getIncomingFriendRequestsJSON)
+        val responseIncomingFriend = utils.ignoreUnknownKeysJson(getIncomingFriendRequestsJSON)
         val incomingFriendRequests: List<FriendRequestData> =
           responseIncomingFriend.data.friendrequests ?: emptyList()
 
         friendRequestId = incomingFriendRequests.map { it.id }
-
         val incomingUsers = incomingFriendRequests.map { it.recipient }
+
         incomingFriendRequestAdapter.updateData(incomingUsers, friendRequestId)
       } catch (e: Exception) {
         e.printStackTrace()
@@ -122,7 +112,8 @@ class FriendRequestActivity : AppCompatActivity() {
             GlobalScope.launch(Dispatchers.Main) {
               println("UserEmail in button - $userEmail")
 
-              val receivedMessageFromServer = performFriendRequest(userEmail, emailRecipient)
+              val receivedMessageFromServer =
+                sharedFriendRequestRepo.performFriendRequest(userEmail, emailRecipient)
 
               val status = utils.gsonResponse(receivedMessageFromServer)
               println("Status for friend request: $status")
@@ -141,182 +132,6 @@ class FriendRequestActivity : AppCompatActivity() {
           utils.showToast(this, "Incorrect email")
         }
       }
-    }
-  }
-
-  private suspend fun performFriendRequest(senderEmail: String, emailRecipient: String): String {
-    try {
-      val eventType: String = "SendFriendRequest"
-      val connection = SocketConnection()
-      SocketConnection.getInstance()
-
-      val friendRequestActivity =
-        ServerRequest(
-          eventType = eventType,
-          data =
-            DataRequest(
-              friendrequest =
-                FriendRequestData(
-                  id = 0,
-                  status = "Pending",
-                  sender = UserData(id = 0, username = "", email = senderEmail, password = ""),
-                  recipient = UserData(id = 0, username = "", email = emailRecipient, password = "")
-                )
-            )
-        )
-
-      val json = gson.toJson(friendRequestActivity)
-
-      println("performFriendRequest json string - $json")
-
-      return connection.connectToServer(json)
-    } catch (e: Exception) {
-      e.printStackTrace()
-      return "Connection failed: ${e.message}"
-    }
-  }
-
-  private suspend fun getFriendRequestsAuthUser(email: String): String {
-    try {
-      val eventType: String = "GetFriendRequests"
-      val connection = SocketConnection()
-      SocketConnection.getInstance()
-
-      val getFriendRequestsAuthUser =
-        ServerRequest(
-          eventType = eventType,
-          data = DataRequest(user = UserData(id = 0, username = "", email = email, password = "")),
-          filter =
-            FilterRequest(
-              FriendRequestData(
-                id = 0,
-                status = "Pending",
-                sender = UserData(id = 0, username = "", email = email, password = ""),
-                recipient = UserData(id = 0, username = "", email = "", password = "")
-              )
-            )
-        )
-
-      val json = gson.toJson(getFriendRequestsAuthUser)
-
-      println("getFriendRequestsAuthUser - json string - $json")
-
-      return connection.connectToServer(json)
-    } catch (e: Exception) {
-      e.printStackTrace()
-      return "Connection failed: ${e.message}"
-    }
-  }
-
-  private suspend fun getIncomingFriendRequests(email: String): String {
-    try {
-      val eventType: String = "GetFriendRequests"
-      val connection = SocketConnection()
-      SocketConnection.getInstance()
-
-      val getIncomingFriendRequests =
-        ServerRequest(
-          eventType = eventType,
-          data = DataRequest(user = UserData(id = 0, username = "", email = email, password = "")),
-          filter =
-            FilterRequest(
-              FriendRequestData(
-                id = 0,
-                status = "Pending",
-                sender = UserData(id = 0, username = "", email = "", password = ""),
-                recipient = UserData(id = 0, username = "", email = email, password = "")
-              )
-            )
-        )
-
-      val json = gson.toJson(getIncomingFriendRequests)
-
-      println("getIncomingFriendRequests - json string - $json")
-
-      return connection.connectToServer(json)
-    } catch (e: Exception) {
-      e.printStackTrace()
-      return "Connection failed: ${e.message}"
-    }
-  }
-
-  private fun showFriendRequestDialog(user: UserData, friendid: Int) {
-    val alertDialogBuilder = AlertDialog.Builder(this)
-    alertDialogBuilder.setTitle("Friend Request")
-    alertDialogBuilder.setMessage("Do you want to add ${user.username} to your friends list?")
-
-    alertDialogBuilder.setNegativeButton("Reject") { _, _ ->
-      GlobalScope.launch { rejectFriendRequest(friendid) }
-    }
-    alertDialogBuilder.setPositiveButton("Accept") { _, _ ->
-      GlobalScope.launch { acceptFriendRequest(friendid) }
-    }
-
-    val alertDialog: AlertDialog = alertDialogBuilder.create()
-    alertDialog.show()
-  }
-
-  private suspend fun acceptFriendRequest(friendRequestId: Int): String {
-    try {
-      val eventType: String = "FriendRequestOperation"
-      val connection = SocketConnection()
-      SocketConnection.getInstance()
-
-      val getIncomingFriendRequests =
-        ServerRequest(
-          eventType = eventType,
-          data =
-            DataRequest(
-              friendrequest =
-                FriendRequestData(
-                  id = friendRequestId,
-                  status = "Accepted",
-                  sender = UserData(id = 0, username = "", email = "", password = ""),
-                  recipient = UserData(id = 0, username = "", email = "", password = "")
-                )
-            ),
-        )
-
-      val json = gson.toJson(getIncomingFriendRequests)
-
-      println("getIncomingFriendRequests - json string - $json")
-
-      return connection.connectToServer(json)
-    } catch (e: Exception) {
-      e.printStackTrace()
-      return "Connection failed: ${e.message}"
-    }
-  }
-
-  private suspend fun rejectFriendRequest(friendRequestId: Int): String {
-    try {
-      val eventType: String = "FriendRequestOperation"
-      val connection = SocketConnection()
-      SocketConnection.getInstance()
-
-      val getIncomingFriendRequests =
-        ServerRequest(
-          eventType = eventType,
-          data =
-            DataRequest(
-              friendrequest =
-                FriendRequestData(
-                  id = friendRequestId,
-                  status = "Rejected",
-                  sender = UserData(id = 0, username = "", email = "", password = ""),
-                  recipient = UserData(id = 0, username = "", email = "", password = "")
-                )
-            ),
-        )
-
-      val json = gson.toJson(getIncomingFriendRequests)
-
-      println("getIncomingFriendRequests - json string - $json")
-
-      return connection.connectToServer(json)
-    } catch (e: Exception) {
-      e.printStackTrace()
-      return "Connection failed: ${e.message}"
     }
   }
 }
