@@ -6,9 +6,34 @@ import com.example.chatapp.dataclass.ServerRequest
 import com.example.chatapp.dataclass.UserData
 import com.google.gson.Gson
 
-class LoginRepo {
+class UserRepo {
 
-  val gson = Gson()
+  private val gson = Gson()
+
+  suspend fun performSignUp(userName: String, email: String, password: String): String {
+    try {
+      val eventType: String = "SignUp"
+      val connection = SocketConnection()
+      SocketConnection.getInstance()
+
+      val signUpActivity =
+        ServerRequest(
+          eventType = eventType,
+          data =
+            DataRequest(
+              user = UserData(id = 0, username = userName, email = email, password = password)
+            ),
+        )
+
+      val json = gson.toJson(signUpActivity)
+      println("json string - $json")
+
+      return connection.connectToServer(json)
+    } catch (e: Exception) {
+      e.printStackTrace()
+      return "Connection failed: ${e.message}"
+    }
+  }
 
   suspend fun performLogin(email: String, password: String): String {
     try {

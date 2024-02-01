@@ -7,7 +7,7 @@ import android.widget.Button
 import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
 import com.example.chatapp.helpers.Utils
-import com.example.chatapp.repository.SignUpRepo
+import com.example.chatapp.repository.UserRepo
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -21,7 +21,7 @@ class SignUpActivity : AppCompatActivity() {
   private lateinit var btnSignUp: Button
   private lateinit var btnBack: Button
 
-  private val signUpRepo = SignUpRepo()
+  private val userRepo = UserRepo()
 
   @SuppressLint("MissingInflatedId")
   @OptIn(DelicateCoroutinesApi::class)
@@ -47,7 +47,7 @@ class SignUpActivity : AppCompatActivity() {
       } else {
         if (utils.isValidEmail(email) && utils.isValidPassword(password)) {
           GlobalScope.launch(Dispatchers.Main) {
-            val receivedMessageFromServer = signUpRepo.performSignUp(userName, email, password)
+            val receivedMessageFromServer = userRepo.performSignUp(userName, email, password)
 
             val status = utils.gsonResponse(receivedMessageFromServer)
 

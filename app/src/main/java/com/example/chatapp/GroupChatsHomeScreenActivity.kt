@@ -1,5 +1,6 @@
 package com.example.chatapp
 
+import UpdateTimer
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
@@ -14,23 +15,19 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.chatapp.Adapters.GroupChatAdapter
-import com.example.chatapp.dataclass.DataRequest
-import com.example.chatapp.dataclass.ServerRequest
-import com.example.chatapp.dataclass.ServerResponse
-import com.example.chatapp.dataclass.UserData
+import com.example.chatapp.helpers.Utils
 import com.example.chatapp.model.GroupChat
 import com.example.chatapp.model.GroupChat.Companion.GROUP_CHAT_EMAILS
 import com.example.chatapp.model.GroupChat.Companion.GROUP_CHAT_ID
 import com.example.chatapp.model.GroupChat.Companion.GROUP_CHAT_USERNAMES
 import com.example.chatapp.model.User
 import com.example.chatapp.model.User.Companion.LOGGED_IN_USER_KEY
+import com.example.chatapp.repository.GroupChatsHomeScreenRepo
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
 class GroupChatsHomeScreenActivity : AppCompatActivity() {
@@ -42,8 +39,10 @@ class GroupChatsHomeScreenActivity : AppCompatActivity() {
   private lateinit var groupChatAdapter: GroupChatAdapter
   private lateinit var overlayLayout: RelativeLayout
 
-  private val gson = Gson()
+  private val groupChatsHomeScreenRepo = GroupChatsHomeScreenRepo()
+  private val updateTimer = UpdateTimer(this)
   private val handler = Handler()
+  private val utils = Utils()
 
   private var userEmail = ""
   private var groupChatList = mutableListOf<GroupChat>()
@@ -93,9 +92,8 @@ class GroupChatsHomeScreenActivity : AppCompatActivity() {
         try {
           val user: User = Json.decodeFromString(User.serializer(), loggedInUserJson)
           userEmail = user.email
-          groupChatsAuthUser = getGroupChatsAuthUser(userEmail)
-          val responseContent =
-            Json { ignoreUnknownKeys = true }.decodeFromString<ServerResponse>(groupChatsAuthUser)
+          groupChatsAuthUser = groupChatsHomeScreenRepo.getGroupChatsAuthUser(userEmail)
+          val responseContent = utils.ignoreUnknownKeysJson(groupChatsAuthUser)
 
           withContext(Dispatchers.Main) {
             if (responseContent.status == "Success") {
@@ -104,7 +102,7 @@ class GroupChatsHomeScreenActivity : AppCompatActivity() {
                   GroupChat(
                     id = groupChatResponse.id,
                     name = groupChatResponse.name,
-                    users = groupChatResponse.users
+                    users = groupChatResponse.users,
                   )
                 }
 
@@ -119,34 +117,30 @@ class GroupChatsHomeScreenActivity : AppCompatActivity() {
                 updateUIWithGroupChats(groupChats)
                 setItemClickListeners(groupChats)
               }
-            } else {
-              // Handle other status values
             }
           }
-          handler.postDelayed(updateRunnable, 10000)
+          handler.postDelayed(updateTimer.updateRunnable, 10000)
         } catch (e: Exception) {
           e.printStackTrace()
         }
       }
     }
 
-    // Search field
     editTextSearch.addTextChangedListener(
       object : TextWatcher {
         override fun beforeTextChanged(
           charSequence: CharSequence?,
           start: Int,
           count: Int,
-          after: Int
+          after: Int,
         ) {}
 
         override fun onTextChanged(
           charSequence: CharSequence?,
           start: Int,
           before: Int,
-          count: Int
+          count: Int,
         ) {
-          // Filter your list or perform search based on the entered text
           filterChatList(charSequence.toString())
         }
 
@@ -170,12 +164,11 @@ class GroupChatsHomeScreenActivity : AppCompatActivity() {
   }
 
   private fun updateRecyclerView(groupChats: List<GroupChat>) {
-    // Update the RecyclerView adapter with the new group chats
     groupChatAdapter.updateData(groupChats)
   }
 
   private fun setItemClickListeners(groupChats: List<GroupChat>) {
-    recyclerView.addOnItemClickListener { position, _ ->
+    GroupChatsHomeScreenRepo.addOnItemClickListener(recyclerView) { position, _ ->
       val selectedGroupChat = filteredGroupChats.getOrNull(position)
 
       if (selectedGroupChat != null) {
@@ -197,68 +190,27 @@ class GroupChatsHomeScreenActivity : AppCompatActivity() {
     }
   }
 
-  private suspend fun getGroupChatsAuthUser(email: String): String {
-    try {
-      val eventType: String = "GetGroupChats"
-      val connection = SocketConnection()
-      SocketConnection.getInstance()
-
-      val getGroupChats =
-        ServerRequest(
-          eventType = eventType,
-          data = DataRequest(user = UserData(id = 0, username = "", email = email, password = ""))
-        )
-
-      val json = gson.toJson(getGroupChats)
-
-      return connection.connectToServer(json)
-    } catch (e: Exception) {
-      e.printStackTrace()
-      return "Connection failed: ${e.message}"
-    }
-  }
-
   private fun filterChatList(query: String) {
     val filteredChatList =
       groupChatList.filter { chat -> chat.name.contains(query, ignoreCase = true) }
     groupChatAdapter.updateData(filteredChatList)
   }
 
-  private fun RecyclerView.addOnItemClickListener(onItemClick: (Int, View) -> Unit) {
-    this.addOnChildAttachStateChangeListener(
-      object : RecyclerView.OnChildAttachStateChangeListener {
-        override fun onChildViewDetachedFromWindow(view: View) {
-          view.setOnClickListener(null)
-        }
-
-        override fun onChildViewAttachedToWindow(view: View) {
-          view.setOnClickListener {
-            val holder = getChildViewHolder(view)
-            onItemClick(holder.adapterPosition, view)
-          }
-        }
-      }
-    )
-  }
-
-  private fun fetchAndUpdateGroupChats() {
+  fun fetchAndUpdateGroupChats() {
     GlobalScope.launch(Dispatchers.Main) {
       try {
-        val responseGroupChatId = getGroupChatsAuthUser(userEmail)
+        val responseGroupChatId = groupChatsHomeScreenRepo.getGroupChatsAuthUser(userEmail)
         println("Received JSON data for group chats: $responseGroupChatId")
 
         val groupChats =
-          Json { ignoreUnknownKeys = true }
-            .decodeFromString<ServerResponse>(responseGroupChatId)
-            .data
-            .groupchats
-            ?.map { groupChatResponse ->
-              GroupChat(
-                id = groupChatResponse.id,
-                name = groupChatResponse.name,
-                users = groupChatResponse.users
-              )
-            } ?: emptyList()
+          utils.ignoreUnknownKeysJson(responseGroupChatId).data.groupchats?.map { groupChatResponse
+            ->
+            GroupChat(
+              id = groupChatResponse.id,
+              name = groupChatResponse.name,
+              users = groupChatResponse.users,
+            )
+          } ?: emptyList()
 
         updateUIWithGroupChats(groupChats)
         updateRecyclerView(groupChats)
@@ -267,18 +219,4 @@ class GroupChatsHomeScreenActivity : AppCompatActivity() {
       }
     }
   }
-
-  override fun onDestroy() {
-    handler.removeCallbacks(updateRunnable)
-    super.onDestroy()
-  }
-
-  private val updateRunnable =
-    object : Runnable {
-      override fun run() {
-        fetchAndUpdateGroupChats()
-
-        handler.postDelayed(this, 10000)
-      }
-    }
 }

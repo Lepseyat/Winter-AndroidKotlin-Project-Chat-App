@@ -10,21 +10,16 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.chatapp.Adapters.FriendsListAdapter
-import com.example.chatapp.dataclass.DataRequest
-import com.example.chatapp.dataclass.FilterRequest
 import com.example.chatapp.dataclass.FriendRequestData
-import com.example.chatapp.dataclass.ServerRequest
-import com.example.chatapp.dataclass.ServerResponse
-import com.example.chatapp.dataclass.UserData
+import com.example.chatapp.helpers.Utils
 import com.example.chatapp.model.User
 import com.example.chatapp.model.User.Companion.LOGGED_IN_USER_KEY
+import com.example.chatapp.repository.SharedFriendRequestRepo
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
 class FriendsActivity : AppCompatActivity() {
@@ -40,7 +35,8 @@ class FriendsActivity : AppCompatActivity() {
 
   private lateinit var overlayLayout: RelativeLayout
 
-  private val gson = Gson()
+  private val sharedFriendRequestRepo = SharedFriendRequestRepo()
+  private val utils = Utils()
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -78,10 +74,9 @@ class FriendsActivity : AppCompatActivity() {
 
     GlobalScope.launch(Dispatchers.Main) {
       try {
-        val getFriendsAuthUserJSON = getFriendsAuthUser(userEmail)
+        val getFriendsAuthUserJSON = sharedFriendRequestRepo.getFriendsAuthUser(userEmail)
 
-        val responseFriends =
-          Json { ignoreUnknownKeys = true }.decodeFromString<ServerResponse>(getFriendsAuthUserJSON)
+        val responseFriends = utils.ignoreUnknownKeysJson(getFriendsAuthUserJSON)
         val friendsList: List<FriendRequestData> =
           responseFriends.data.friendrequests ?: emptyList()
 
@@ -125,37 +120,6 @@ class FriendsActivity : AppCompatActivity() {
       intent.putExtra(LOGGED_IN_USER_KEY, loggedInUserJson)
       intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
       startActivity(intent)
-    }
-  }
-
-  private suspend fun getFriendsAuthUser(email: String): String {
-    try {
-      val eventType: String = "GetFriendRequests"
-      val connection = SocketConnection()
-      SocketConnection.getInstance()
-
-      val getFriendsAuthUser =
-        ServerRequest(
-          eventType = eventType,
-          data = DataRequest(user = UserData(id = 0, username = "", email = email, password = "")),
-          filter =
-            FilterRequest(
-              FriendRequestData(
-                id = 0,
-                status = "Accepted",
-                sender = UserData(id = 0, username = "", email = email, password = ""),
-                recipient = UserData(id = 0, username = "", email = email, password = "")
-              )
-            )
-        )
-
-      val json = gson.toJson(getFriendsAuthUser)
-      println("json string - $json")
-
-      return connection.connectToServer(json)
-    } catch (e: Exception) {
-      e.printStackTrace()
-      return "Connection failed: ${e.message}"
     }
   }
 }
