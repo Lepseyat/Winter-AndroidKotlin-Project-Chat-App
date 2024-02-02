@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
 class ChatActivity : AppCompatActivity() {
-  private val chatRepo = SharedChatRepo()
+  private val sharedChatRepo = SharedChatRepo()
   private val utils = Utils()
   private val handler = Handler()
 
@@ -83,10 +83,10 @@ class ChatActivity : AppCompatActivity() {
           println("Groupchat activity username, email, password - $username, $email, $groupChatId")
 
           GlobalScope.launch(Dispatchers.Main) {
-            val responseGroupChatId = chatRepo.getMessagesByGroupID(GroupChatId)
+            val responseGroupChatId = sharedChatRepo.getMessagesByGroupID(GroupChatId)
             println("Received JSON data: $responseGroupChatId")
 
-            val messages = chatRepo.parseMessagesResponse(responseGroupChatId)
+            val messages = sharedChatRepo.parseMessagesResponse(responseGroupChatId)
             println("messages - $messages")
 
             if (messages.isEmpty()) {
@@ -96,7 +96,7 @@ class ChatActivity : AppCompatActivity() {
               imageView.visibility = View.GONE
               textViewNoChats.visibility = View.GONE
             }
-            chatRepo.updateRecyclerView(context, messages, recyclerViewMessages)
+            sharedChatRepo.updateRecyclerView(context, messages, recyclerViewMessages)
           }
 
           btnSendMessage.setOnClickListener {
@@ -110,7 +110,7 @@ class ChatActivity : AppCompatActivity() {
                 var content = editTextMessage.text.toString()
                 var attachmentURL = ""
 
-                chatRepo.sendMessageByGroupID(
+                sharedChatRepo.sendMessageByGroupID(
                   content,
                   timestamp,
                   attachmentURL,
@@ -122,7 +122,7 @@ class ChatActivity : AppCompatActivity() {
               }
             }
           }
-          handler.postDelayed(updateRunnable, 6000)
+          handler.postDelayed(updateRunnable, 10000)
         } catch (e: Exception) {
           e.printStackTrace()
         }
@@ -138,7 +138,7 @@ class ChatActivity : AppCompatActivity() {
   private val updateRunnable =
     object : Runnable {
       override fun run() {
-        chatRepo.fetchAndUpdateMessages(
+        sharedChatRepo.fetchAndUpdateMessages(
           context,
           GroupChatId,
           imageView,
@@ -146,7 +146,7 @@ class ChatActivity : AppCompatActivity() {
           recyclerViewMessages,
         )
 
-        handler.postDelayed(this, 5000)
+        handler.postDelayed(this, 10000)
       }
     }
 }

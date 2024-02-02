@@ -13,10 +13,18 @@ class GroupChatAdapter(private val context: Context, private var groupChats: Lis
   RecyclerView.Adapter<GroupChatAdapter.GroupChatViewHolder>() {
 
   private val inflater: LayoutInflater = LayoutInflater.from(context)
+  private var onItemClickListener: ((Int) -> Unit)? = null
 
   override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): GroupChatViewHolder {
     val view = inflater.inflate(R.layout.item_group_chat, parent, false)
-    return GroupChatViewHolder(view)
+    val viewHolder = GroupChatViewHolder(view)
+
+    // Set the click listener when a new view is created
+    viewHolder.itemView.setOnClickListener {
+      onItemClickListener?.invoke(viewHolder.adapterPosition)
+    }
+
+    return viewHolder
   }
 
   override fun onBindViewHolder(holder: GroupChatViewHolder, position: Int) {
@@ -35,5 +43,9 @@ class GroupChatAdapter(private val context: Context, private var groupChats: Lis
   fun updateData(newData: List<GroupChat>) {
     groupChats = newData
     notifyDataSetChanged()
+  }
+
+  fun setOnItemClickListener(listener: (Int) -> Unit) {
+    onItemClickListener = listener
   }
 }

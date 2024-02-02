@@ -9,7 +9,7 @@ import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.net.Socket
 
-class SocketConnection constructor() {
+class SocketConnection {
   companion object SocketSingleton {
     private const val SERVER_ADDRESS = "10.0.2.2"
     private const val PORT = 8081
