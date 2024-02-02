@@ -8,7 +8,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.chatapp.Adapters.MembersInAGroupChatAdapter
 import com.example.chatapp.dataclass.UserData
-import com.example.chatapp.helpers.Utils
 import com.example.chatapp.model.GroupChat
 import com.example.chatapp.model.GroupChat.Companion.GROUP_CHAT_EMAILS
 import com.example.chatapp.model.GroupChat.Companion.GROUP_CHAT_USERNAMES
@@ -25,7 +24,6 @@ class GroupChatMembersActivity : AppCompatActivity() {
   private var GroupChatId: Int? = null
 
   private val groupChatMembersRepo = SharedGroupChatMembersRepo()
-  private val utils = Utils()
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
